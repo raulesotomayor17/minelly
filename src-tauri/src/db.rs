@@ -300,6 +300,33 @@ impl Catalog {
             CREATE VIRTUAL TABLE IF NOT EXISTS passage_ranges_rtree USING rtree_i32(
                 id, start_verse_code, end_verse_code
             );
+            CREATE TABLE IF NOT EXISTS learning_sessions (
+                id TEXT PRIMARY KEY,
+                goal_title TEXT NOT NULL,
+                topic_category TEXT NOT NULL DEFAULT 'exegesis',
+                stage TEXT NOT NULL DEFAULT 'measure',
+                dependency_plan_json TEXT NOT NULL DEFAULT '[]',
+                messages_json TEXT NOT NULL DEFAULT '[]',
+                active_step_id TEXT NOT NULL DEFAULT '',
+                created_at INTEGER NOT NULL,
+                updated_at INTEGER NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS knowledge_propositions (
+                id TEXT PRIMARY KEY,
+                session_id TEXT NOT NULL,
+                claim TEXT NOT NULL,
+                reasoning_premise TEXT NOT NULL DEFAULT '',
+                related_refs_json TEXT NOT NULL DEFAULT '[]',
+                related_strongs_json TEXT NOT NULL DEFAULT '[]',
+                mastery_state TEXT NOT NULL DEFAULT 'learned',
+                created_at INTEGER NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS knowledge_edges (
+                from_prop_id TEXT NOT NULL,
+                to_prop_id TEXT NOT NULL,
+                relation TEXT NOT NULL DEFAULT 'supports',
+                PRIMARY KEY (from_prop_id, to_prop_id)
+            );
             CREATE TABLE IF NOT EXISTS reading_progress (
                 resource_id TEXT PRIMARY KEY,
                 spine INTEGER NOT NULL DEFAULT 0,

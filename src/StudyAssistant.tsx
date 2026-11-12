@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { PaperModePicker } from "./CustomizationModal";
+import LearnHarness from "./LearnHarness";
 
 export interface RagContext {
   id: string;
@@ -474,6 +475,7 @@ export function StudyAssistant({
     if (initialQuestion.trim()) setQuery(initialQuestion);
   }, [initialQuestion]);
   const [error, setError] = useState("");
+  const [assistantMode, setAssistantMode] = useState<"rag" | "harness" | "graph">("rag");
   const [showConfigPanel, setShowConfigPanel] = useState(true);
   const [showKeyPlain, setShowKeyPlain] = useState(false);
   const [turns, setTurns] = useState<ConversationTurn[]>([]);
@@ -988,7 +990,7 @@ export function StudyAssistant({
 
   return (
     <section
-      className="assistant-workspace"
+      className={`assistant-workspace assistant-mode-${assistantMode}`}
       aria-label="Asistente de estudio e investigación académica"
       style={
         {
@@ -1008,6 +1010,21 @@ export function StudyAssistant({
             <strong>Agente Académico Local</strong> para consultar tus Biblias,
             comentarios, diccionarios y libros importados.
           </p>
+        </div>
+
+        <div className="assistant-mode-switch" role="tablist" aria-label="Modo del Asistente">
+          {([
+            ["rag", "Investigación y Cátedra"],
+            ["harness", "Arnés de Aprendizaje"],
+            ["graph", "Grafo de Conocimiento"],
+          ] as const).map(([id, label]) => (
+            <button key={id} type="button" className={assistantMode === id ? "active" : ""} onClick={() => setAssistantMode(id)}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d={id === "rag" ? "M4 5h16v14H4zM8 9h8M8 13h5" : id === "harness" ? "M5 19V5m7 14V9m7 10V3" : "M5 12h4l3-7 3 14 3-7h2"} stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              {label}
+            </button>
+          ))}
         </div>
 
         <div className="assistant-header-actions">
@@ -1057,6 +1074,14 @@ export function StudyAssistant({
           </button>
         </div>
       </header>
+
+      {assistantMode !== "rag" && (
+        <LearnHarness
+          mode={assistantMode}
+          onModeChange={(mode) => setAssistantMode(mode)}
+          onOpenContext={onOpenContext}
+        />
+      )}
 
       {/* Barra de Contabilidad de Tokens y Estado del Proveedor */}
       <div className="assistant-token-bar">

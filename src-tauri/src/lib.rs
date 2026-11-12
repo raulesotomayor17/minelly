@@ -9,6 +9,7 @@ pub mod indexer;
 pub mod indexer_v2;
 pub mod reading;
 pub mod editorial;
+pub mod learning;
 pub mod model;
 pub mod interlinear;
 pub mod notes;
@@ -130,6 +131,13 @@ pub fn run() {
             commands::update_book_chapter_html,
             commands::repair_all_books_typesetting,
             commands::repair_book_typesetting,
+            commands::learning_session_list,
+            commands::learning_session_get,
+            commands::learning_session_save,
+            commands::learning_session_delete,
+            commands::knowledge_proposition_add,
+            commands::knowledge_graph_list,
+            commands::knowledge_proposition_delete,
             commands::reading_progress_get,
             commands::reading_progress_list,
             commands::reading_progress_save,

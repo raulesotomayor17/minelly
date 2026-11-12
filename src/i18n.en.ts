@@ -657,4 +657,12 @@ export const EN_TRANSLATIONS: Record<string, string> = {
   "Temas Claros Editoriales": "Light Editorial Themes",
   "Temas Oscuros de Estudio": "Dark Study Themes",
 
+  "Arnés de Aprendizaje": "Learning Harness",
+  "Grafo de Conocimiento": "Knowledge Graph",
+  "Investigación y Cátedra": "Research and Chair",
+  "Mapa de dependencias": "Dependency map",
+  "Tu respuesta o predicción": "Your answer or prediction",
+  "Tu razonamiento o duda": "Your reasoning or doubt",
+  "Guardar en Notas": "Save to Notes",
+
 };

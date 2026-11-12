@@ -626,6 +626,54 @@ pub fn repair_book_typesetting(state: State<'_, AppState>, resource_id: String) 
 }
 
 #[tauri::command]
+pub fn learning_session_list(state: State<'_, AppState>) -> Result<Vec<crate::learning::LearningSession>, String> {
+    let catalog = state.catalog.lock().map_err(message)?;
+    crate::learning::session_list(catalog.connection()).map_err(message)
+}
+
+#[tauri::command]
+pub fn learning_session_get(state: State<'_, AppState>, id: String) -> Result<Option<crate::learning::LearningSession>, String> {
+    let catalog = state.catalog.lock().map_err(message)?;
+    crate::learning::session_get(catalog.connection(), &id).map_err(message)
+}
+
+#[tauri::command]
+pub fn learning_session_save(state: State<'_, AppState>, input: crate::learning::LearningSessionInput) -> Result<crate::learning::LearningSession, String> {
+    let catalog = state.catalog.lock().map_err(message)?;
+    crate::learning::session_save(catalog.connection(), input).map_err(message)
+}
+
+#[tauri::command]
+pub fn learning_session_delete(state: State<'_, AppState>, id: String) -> Result<(), String> {
+    let catalog = state.catalog.lock().map_err(message)?;
+    crate::learning::session_delete(catalog.connection(), &id).map_err(message)
+}
+
+#[tauri::command]
+pub fn knowledge_proposition_add(
+    state: State<'_, AppState>, session_id: String, claim: String,
+    reasoning_premise: Option<String>, related_refs: Option<serde_json::Value>,
+    related_strongs: Option<serde_json::Value>,
+) -> Result<crate::learning::KnowledgeProposition, String> {
+    let catalog = state.catalog.lock().map_err(message)?;
+    crate::learning::proposition_add(catalog.connection(), &session_id, &claim,
+        reasoning_premise.as_deref().unwrap_or(""), related_refs.unwrap_or(serde_json::json!([])),
+        related_strongs.unwrap_or(serde_json::json!([]))).map_err(message)
+}
+
+#[tauri::command]
+pub fn knowledge_graph_list(state: State<'_, AppState>, session_id: Option<String>) -> Result<Vec<crate::learning::KnowledgeProposition>, String> {
+    let catalog = state.catalog.lock().map_err(message)?;
+    crate::learning::graph_list(catalog.connection(), session_id.as_deref().filter(|v| !v.is_empty())).map_err(message)
+}
+
+#[tauri::command]
+pub fn knowledge_proposition_delete(state: State<'_, AppState>, id: String) -> Result<(), String> {
+    let catalog = state.catalog.lock().map_err(message)?;
+    crate::learning::proposition_delete(catalog.connection(), &id).map_err(message)
+}
+
+#[tauri::command]
 pub fn reading_progress_get(state: State<'_, AppState>, resource_id: String) -> Result<Option<crate::model::ReadingProgress>, String> {
     let catalog = state.catalog.lock().map_err(message)?;
     crate::reading::progress_get(catalog.connection(), &resource_id).map_err(message)
