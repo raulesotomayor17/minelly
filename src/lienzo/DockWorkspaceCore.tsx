@@ -85,7 +85,31 @@ function PaneHost({
   }
 
   return (
-    <div className="dock-panel-host">
+    <div className={`dock-panel-host pane-appearance-${pane.state.appearance ?? "inherit"}`}>
+      <div className="dock-pane-controls">
+        <button
+          type="button"
+          onClick={() => change((current) => ({ ...current, state: { ...current.state, fontScale: Math.max(0.75, (current.state.fontScale ?? 1) - 0.1) } }))}
+          title="Reducir letra del panel"
+        >A−</button>
+        <button
+          type="button"
+          onClick={() => change((current) => ({ ...current, state: { ...current.state, fontScale: Math.min(1.8, (current.state.fontScale ?? 1) + 0.1) } }))}
+          title="Aumentar letra del panel"
+        >A+</button>
+        <select
+          value={pane.state.appearance ?? "inherit"}
+          onChange={(event) => change((current) => ({ ...current, state: { ...current.state, appearance: event.target.value as typeof current.state.appearance } }))}
+          title="Aspecto del panel"
+        >
+          <option value="inherit">Tema</option>
+          <option value="light">Claro</option>
+          <option value="sepia">Sepia</option>
+          <option value="dark">Oscuro</option>
+          <option value="contrast">Contraste</option>
+        </select>
+      </div>
+      <div className="dock-pane-scaled" style={{ zoom: pane.state.fontScale ?? 1 }}>
       <PaneView
         pane={pane}
         canClose
@@ -139,6 +163,7 @@ function PaneHost({
         onDragStart={() => undefined}
         onOpenStrong={() => undefined}
       />
+      </div>
     </div>
   );
 }
