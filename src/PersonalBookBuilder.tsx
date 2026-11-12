@@ -695,6 +695,11 @@ export default function PersonalBookBuilder({
                   </span>
                 </div>
                 <p>{result.message}</p>
+                {result.status === "success" && result.warningCount > 0 && (
+                  <div className="pbb-autoheal-badge">
+                    ✓ Auto-maquetado: {result.warningCount} imperfecciones corregidas automáticamente
+                  </div>
+                )}
                 <div className="pbb-result-actions">
                   {result.status === "success" && (
                     <button
@@ -768,7 +773,7 @@ export default function PersonalBookBuilder({
                           onClick={() => void recompile(book)}
                           disabled={book.cloudSynced}
                         >
-                          Recompilar
+                          Re-maquetar y limpiar
                         </button>
                         <button
                           className="secondary-button"

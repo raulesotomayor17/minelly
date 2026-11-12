@@ -9,6 +9,7 @@ pub mod indexer;
 pub mod indexer_v2;
 pub mod reading;
 pub mod editorial;
+pub mod autosanear;
 pub mod learning;
 pub mod model;
 pub mod interlinear;

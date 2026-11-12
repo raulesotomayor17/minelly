@@ -16454,3 +16454,5 @@ html:is([data-theme="white"],[data-theme="warm"],[data-theme="terracotta"],[data
 .settings-api-field { align-items: center; }
 .settings-api-field input { min-width: 190px; height: 32px; padding: 0 8px; border: 1px solid var(--border); border-radius: 5px; background: var(--bg-input); color: var(--text-primary); }
 .settings-api-save { margin: 4px 0 8px auto; display: block; }
+
+.pbb-autoheal-badge { display: inline-flex; align-items: center; gap: 5px; margin: 6px 0; padding: 5px 9px; border: 1px solid var(--accent); border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-size: 11px; font-weight: 600; }

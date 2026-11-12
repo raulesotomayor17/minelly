@@ -132,14 +132,14 @@ pub fn read_docx(path: &Path) -> Result<DocxDocument> {
         {
             issues.push(DocxIssue {
                 code: "EMPTY_HEADING_BREAK".to_string(),
-                severity: "error".to_string(),
+                severity: "warning".to_string(),
                 message: "Encabezado vacío asociado a un salto de sección o página.".to_string(),
             });
         }
         if paragraph.text.trim().eq_ignore_ascii_case("A_UNKNOWN") {
             issues.push(DocxIssue {
                 code: "UNKNOWN_ARTICLE".to_string(),
-                severity: "error".to_string(),
+                severity: "warning".to_string(),
                 message: "Se encontró el marcador de artículo desconocido A_UNKNOWN.".to_string(),
             });
         }
@@ -164,7 +164,7 @@ pub fn read_docx(path: &Path) -> Result<DocxDocument> {
         match paragraph.heading_level {
             Some(level) if level == start_level => {
                 saw_heading = true;
-                close_article(&mut current, &mut articles, &mut issues);
+                let pending_kicker = close_article(&mut current, &mut articles, &mut issues);
                 if paragraph.text.trim().is_empty() {
                     issues.push(DocxIssue {
                         code: "EMPTY_HEADING".to_string(),
@@ -187,6 +187,11 @@ pub fn read_docx(path: &Path) -> Result<DocxDocument> {
                     )
                 } else {
                     anchor_spans
+                };
+                let initial_html = if let Some(kicker) = pending_kicker {
+                    format!("<div class=\"editorial-part-kicker\">{}</div>{}", escape_html(&kicker), initial_html)
+                } else {
+                    initial_html
                 };
                 current = Some(DocxArticle {
                     title: if trimmed_title.is_empty() {
@@ -264,7 +269,7 @@ pub fn read_docx(path: &Path) -> Result<DocxDocument> {
             }
         }
     }
-    close_article(&mut current, &mut articles, &mut issues);
+    let _ = close_article(&mut current, &mut articles, &mut issues);
 
     if !saw_heading {
         if !intro.is_empty() {
@@ -345,19 +350,17 @@ pub fn read_docx(path: &Path) -> Result<DocxDocument> {
 fn close_article(
     current: &mut Option<DocxArticle>,
     articles: &mut Vec<DocxArticle>,
-    issues: &mut Vec<DocxIssue>,
-) {
-    if let Some(article) = current.take() {
-        if article.html.trim().is_empty() {
-            issues.push(DocxIssue {
-                code: "ZERO_LENGTH_ARTICLE".to_string(),
-                severity: "error".to_string(),
-                message: format!("El artículo «{}» no contiene cuerpo de texto.", article.title),
-            });
-        } else {
-            articles.push(article);
-        }
+    _issues: &mut Vec<DocxIssue>,
+) -> Option<String> {
+    let Some(article) = current.take() else { return None; };
+    let body = article.html.split("</h1>").nth(1).unwrap_or("").trim();
+    if body.is_empty() {
+        // Dos encabezados consecutivos: el primero se convierte en antetítulo
+        // del siguiente y no produce un artículo vacío.
+        return Some(article.title);
     }
+    articles.push(article);
+    None
 }
 
 fn read_entry(archive: &mut ZipArchive<File>, name: &str) -> Result<Option<String>> {

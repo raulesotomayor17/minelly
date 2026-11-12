@@ -16,6 +16,36 @@ pub fn normalize_editorial_html(raw: &str) -> String {
             if valid { caps.get(0).unwrap().as_str().to_string() } else { body.to_string() }
         })
         .into_owned();
+    // Números de página aislados.
+    let page_number = Regex::new(r"(?is)<p[^>]*>\s*(?:pág\.?|p\.?|page)?\s*\d{1,4}\s*</p>").unwrap();
+    html = page_number.replace_all(&html, "").into_owned();
+    // Encabezados/pies repetidos: normaliza dígitos y elimina los que aparecen >= 4 veces.
+    let para = Regex::new(r"(?is)<p([^>]*)>(.*?)</p>").unwrap();
+    let mut counts: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
+    for cap in para.captures_iter(&html) {
+        let text = Regex::new(r"<[^>]+>").unwrap().replace_all(cap.get(2).map(|m| m.as_str()).unwrap_or(""), " ");
+        let clean = text.split_whitespace().collect::<Vec<_>>().join(" ");
+        if clean.chars().count() <= 85 && !clean.is_empty() {
+            let key = Regex::new(r"\d+").unwrap().replace_all(&clean.to_lowercase(), "#").to_string();
+            *counts.entry(key).or_insert(0) += 1;
+        }
+    }
+    let repeated: std::collections::HashSet<String> = counts.into_iter().filter(|(_, n)| *n >= 4).map(|(k, _)| k).collect();
+    html = para.replace_all(&html, |caps: &Captures<'_>| {
+        let attrs = caps.get(1).map(|m| m.as_str()).unwrap_or("");
+        let inner = caps.get(2).map(|m| m.as_str()).unwrap_or("");
+        let text = Regex::new(r"<[^>]+>").unwrap().replace_all(inner, " ");
+        let clean = text.split_whitespace().collect::<Vec<_>>().join(" ");
+        let key = Regex::new(r"\d+").unwrap().replace_all(&clean.to_lowercase(), "#").to_string();
+        if attrs.to_lowercase().contains("scripture-ref") || attrs.to_lowercase().contains("editorial-part-kicker") {
+            caps.get(0).unwrap().as_str().to_string()
+        } else if repeated.contains(&key) && clean.chars().count() <= 85 {
+            String::new()
+        } else {
+            caps.get(0).unwrap().as_str().to_string()
+        }
+    }).into_owned();
+
     let bullet = Regex::new(r"(?is)<p[^>]*>\s*[•●▪◦]\s*(.*?)</p>").unwrap();
     html = bullet
         .replace_all(&html, "<ul class=\"editorial-list\"><li>$1</li></ul>")
