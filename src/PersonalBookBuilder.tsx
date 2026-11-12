@@ -695,9 +695,9 @@ export default function PersonalBookBuilder({
                   </span>
                 </div>
                 <p>{result.message}</p>
-                {result.status === "success" && result.warningCount > 0 && (
+                {result.status === "success" && result.diagnostics.some((item) => item.code === "AUTO_HEAL") && (
                   <div className="pbb-autoheal-badge">
-                    ✓ Auto-maquetado: {result.warningCount} imperfecciones corregidas automáticamente
+                    ✓ Auto-maquetado: {result.diagnostics.find((item) => item.code === "AUTO_HEAL")?.message.replace("Auto-sanación: ", "")}
                   </div>
                 )}
                 <div className="pbb-result-actions">
