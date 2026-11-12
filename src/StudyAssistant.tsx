@@ -476,7 +476,7 @@ export function StudyAssistant({
   }, [initialQuestion]);
   const [error, setError] = useState("");
   const [assistantMode, setAssistantMode] = useState<"rag" | "harness" | "graph">("rag");
-  const [showConfigPanel, setShowConfigPanel] = useState(true);
+  const [showConfigPanel, setShowConfigPanel] = useState(false);
   const [showKeyPlain, setShowKeyPlain] = useState(false);
   const [turns, setTurns] = useState<ConversationTurn[]>([]);
   const [activeTurnId, setActiveTurnId] = useState<string | null>(null);
@@ -1053,7 +1053,7 @@ export function StudyAssistant({
             className="secondary-button"
             onClick={() => setShowConfigPanel((v) => !v)}
           >
-            {showConfigPanel ? "Ocultar configuración IA" : "⚙ Configurar API / Proveedor"}
+            {showConfigPanel ? "Ocultar configuración IA" : "Configurar API / Proveedor"}
           </button>
 
           <PaperModePicker compact />

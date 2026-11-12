@@ -665,4 +665,9 @@ export const EN_TRANSLATIONS: Record<string, string> = {
   "Tu razonamiento o duda": "Your reasoning or doubt",
   "Guardar en Notas": "Save to Notes",
 
+  "Inicio": "Home",
+  "Proveedor de IA del Asistente": "Assistant AI provider",
+  "Guardar API del Asistente": "Save Assistant API",
+  "Configurar API / Proveedor": "Configure API / Provider",
+
 };
