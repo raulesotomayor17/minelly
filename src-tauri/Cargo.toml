@@ -1,10 +1,10 @@
 [package]
-name = "teoamoxtli"
+name = "minelly"
 version = "0.2.0"
-description = "Teoamoxtli: estudio bíblico local y multiplataforma"
-authors = ["Teoamoxtli"]
+description = "Minelly: estudio bíblico local y multiplataforma"
+authors = ["Minelly"]
 edition = "2024"
-default-run = "teoamoxtli"
+default-run = "minelly"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -12,7 +12,7 @@ default-run = "teoamoxtli"
 # The `_lib` suffix may seem redundant but it is necessary
 # to make the lib name unique and wouldn't conflict with the bin name.
 # This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
-name = "teoamoxtli_lib"
+name = "minelly_lib"
 # Desktop-only build: the MinGW linker rejects the export count of the
 # mobile cdylib artifact, and Tauri desktop only needs the rlib.
 crate-type = ["rlib"]
