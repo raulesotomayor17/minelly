@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Minelly · Propuesta de identidad</title>
+<style>
+  @page { size: A4; margin: 0; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: Inter, sans-serif; color: #33455A; }
+
+  .page { width: 210mm; height: 297mm; position: relative; overflow: hidden;
+          page-break-after: always; background: #FBFAF7; }
+  .page:last-child { page-break-after: auto; }
+  .dark { background: #0A2038; color: #F6F1E7; }
+
+  .eyebrow { font-family: Inter; font-weight: 600; font-size: 7.2pt; letter-spacing: 1.7pt;
+             color: #B87333; text-transform: uppercase; }
+  .dark .eyebrow { color: #D08C4A; }
+  h1 { font-family: Literata; font-weight: 600; font-size: 25pt; line-height: 1.12;
+       color: #0A2038; margin: 3mm 0 0 0; letter-spacing: -0.2pt; }
+  .dark h1 { color: #F6F1E7; }
+  .lead { font-family: Literata; font-weight: 400; font-size: 11.6pt; line-height: 1.5;
+          color: #33455A; }
+  .body { font-family: Inter; font-size: 9.4pt; line-height: 1.58; color: #33455A; }
+  .muted { color: #5B6B7C; }
+  .copper { color: #8A5A2B; }
+  .small { font-size: 7.8pt; }
+  .tnum { font-family: Inter; font-weight: 600; }
+
+  .pagenum { position: absolute; right: 18mm; bottom: 11mm; font-family: Inter;
+             font-size: 7.2pt; letter-spacing: 1pt; color: #8C99A8; }
+  .rule { position: absolute; height: 0.3mm; background: #E2DDD2; }
+
+  /* cover */
+  .cover-lockup { position: absolute; left: 24mm; top: 96mm; width: 132mm; }
+  .cover-title { position: absolute; left: 24mm; top: 168mm; width: 150mm;
+                 font-family: Literata; font-size: 30pt; font-weight: 400; line-height: 1.15; }
+  .cover-sub { position: absolute; left: 24mm; top: 196mm; width: 120mm;
+               font-family: Inter; font-size: 10pt; line-height: 1.6; color: #B9C6D6; }
+  .cover-meta { position: absolute; left: 24mm; bottom: 20mm; font-family: Inter;
+                font-size: 7.4pt; letter-spacing: 1.2pt; color: #8FA0B5; text-transform: uppercase; }
+  .cover-tag { position: absolute; right: 24mm; bottom: 20mm; font-family: Literata;
+               font-size: 9pt; color: #D08C4A; }
+
+  /* generic content blocks */
+  .pad { position: absolute; left: 20mm; top: 22mm; width: 170mm; }
+  .two { position: absolute; top: 78mm; left: 20mm; width: 170mm; }
+  .col { position: absolute; top: 0; width: 80mm; }
+  .col.left { left: 0; }
+  .col.right { left: 90mm; }
+
+  .num { font-family: Literata; font-size: 13pt; color: #B87333; font-weight: 600; }
+  .item { margin-bottom: 5.4mm; }
+  .item h3 { font-family: Inter; font-size: 9.6pt; font-weight: 600; color: #0A2038; margin: 0 0 1.4mm 0; }
+  .item p { margin: 0; }
+
+  table.spec { width: 100%; border-collapse: collapse; font-size: 9pt; }
+  table.spec td { padding: 2.6mm 0; border-bottom: 0.25mm solid #E2DDD2; vertical-align: top; }
+  table.spec td.k { width: 42mm; font-family: Inter; font-weight: 600; color: #0A2038; font-size: 8.2pt;
+                    letter-spacing: 0.6pt; text-transform: uppercase; }
+  table.spec td.v { font-family: Literata; font-size: 10.5pt; color: #16324F; }
+
+  .quote { border-left: 1.2mm solid #B87333; padding-left: 5mm; font-family: Literata;
+           font-size: 11pt; line-height: 1.5; color: #16324F; }
+
+  /* route cards */
+  .route { position: absolute; left: 20mm; width: 170mm; height: 54mm; background: #FFFFFF;
+           border: 0.3mm solid #E8E2D6; border-radius: 2mm; }
+  .route .thumb { position: absolute; left: 5mm; top: 5mm; width: 46mm; height: 46mm; }
+  .route .thumb img { width: 46mm; height: 46mm; }
+  .route .txt { position: absolute; left: 58mm; top: 7mm; width: 104mm; }
+  .route h3 { font-family: Literata; font-weight: 600; font-size: 14pt; color: #0A2038;
+              margin: 0 0 1.6mm 0; }
+  .route .tag { font-family: Inter; font-size: 7pt; letter-spacing: 1.2pt; text-transform: uppercase;
+                color: #B87333; font-weight: 600; }
+  .route p { font-family: Inter; font-size: 8.6pt; line-height: 1.5; color: #33455A; margin: 1.6mm 0 0 0; }
+  .route .when { font-family: Inter; font-size: 8pt; color: #5B6B7C; margin-top: 1.6mm; }
+
+  .reco { position: absolute; left: 20mm; top: 236mm; width: 170mm; background: #0A2038;
+          color: #F6F1E7; border-radius: 2mm; padding: 6mm 7mm; }
+  .reco .tag { font-family: Inter; font-size: 7pt; letter-spacing: 1.6pt; color: #D08C4A;
+               font-weight: 600; text-transform: uppercase; }
+  .reco p { font-family: Inter; font-size: 8.8pt; line-height: 1.55; color: #DCE4EE; margin: 2mm 0 0 0; }
+
+  /* palette */
+  .chip { position: absolute; width: 30mm; height: 30mm; border-radius: 1.6mm; }
+  .chip .name { position: absolute; left: 0; top: 32.5mm; width: 32mm; font-family: Inter;
+                font-size: 7.4pt; font-weight: 600; color: #0A2038; }
+  .chip .hex { position: absolute; left: 0; top: 36.2mm; width: 32mm; font-family: Inter;
+               font-size: 6.8pt; color: #6C7A89; letter-spacing: 0.4pt; }
+
+  /* type specimen */
+  .specimen { font-family: Literata; color: #0A2038; }
+
+  /* app mock */
+  .app { position: absolute; left: 20mm; top: 78mm; width: 80mm; height: 118mm; background: #0A2038;
+         border-radius: 2.5mm; overflow: hidden; }
+  .app .hdr { position: absolute; left: 5mm; top: 6mm; width: 70mm; }
+  .app .hdr img { width: 9mm; height: 9mm; float: left; margin-right: 3mm; }
+  .app .brand { font-family: Literata; font-weight: 600; font-size: 12.5pt; color: #F6F1E7; }
+  .app .desc { font-family: Inter; font-size: 4.4pt; letter-spacing: 1.5pt; color: #D08C4A; margin-top: 1mm; }
+  .app .nav { position: absolute; left: 5mm; top: 26mm; width: 70mm; }
+  .app .nav div { font-family: Inter; font-size: 8.6pt; color: #C3D1E0; padding: 2.6mm 3mm; }
+  .app .nav .on { background: #112A49; border-left: 1mm solid #B87333; color: #FFFFFF; border-radius: 0 1mm 1mm 0; }
+  .app .foot { position: absolute; left: 5mm; bottom: 6mm; font-family: Inter; font-size: 6.6pt; color: #7F93A8; }
+
+  .iconrow img { vertical-align: bottom; margin-right: 6mm; }
+  .note { font-family: Inter; font-size: 8.2pt; color: #5B6B7C; line-height: 1.5; }
+</style>
+</head>
+<body>
+
+<!-- 01 · PORTADA -->
+<div class="page dark">
+  <img class="cover-lockup" src="logos/lockup-A-curvas.svg">
+  <div class="cover-title">El texto, en serio.</div>
+  <div class="cover-sub">Propuesta de identidad para Minelly Bible Software.<br>
+    Marca, logotipo y sistema visual para el estudio bíblico en español.</div>
+  <div class="cover-meta">Propuesta 01 · Noviembre 2026</div>
+  <div class="cover-tag">Minelly · Estudio Bíblico</div>
+</div>
+
+<!-- 02 · LA DECISIÓN -->
+<div class="page">
+  <div class="pad">
+    <div class="eyebrow">01 · La decisión</div>
+    <h1>Minelly se dice una vez<br>y se escribe igual.</h1>
+    <p class="lead" style="margin-top:7mm; width:150mm;">El nombre deja de ser una hipótesis. La arquitectura
+      separa la marca del descriptor para que funcione en español y en inglés sin traducir el nombre.</p>
+  </div>
+
+  <div style="position:absolute; left:20mm; top:96mm; width:170mm;">
+    <table class="spec">
+      <tr><td class="k">Marca</td><td class="v">Minelly</td></tr>
+      <tr><td class="k">Nombre oficial</td><td class="v">Minelly Bible Software</td></tr>
+      <tr><td class="k">Lockup en español</td><td class="v">Minelly · Estudio Bíblico</td></tr>
+      <tr><td class="k">Descriptor corto</td><td class="v">Estudio bíblico</td></tr>
+      <tr><td class="k">Dominio</td><td class="v">minelly.bible · minellybible.com</td></tr>
+    </table>
+  </div>
+
+  <div class="two" style="top:160mm;">
+    <div class="col left">
+      <div class="item"><h3>Se pronuncia y se escribe sin fricción</h3>
+        <p class="body">En español y en inglés, al teléfono y al dictado. Nadie tiene que preguntar dos veces cómo se escribe.</p></div>
+      <div class="item"><h3>Tiene historia propia</h3>
+        <p class="body">Viene de tu hija, no de un diccionario ni de una consulta de dominio. Eso no se compra y no se copia.</p></div>
+    </div>
+    <div class="col right">
+      <div class="item"><h3>No arrastra deuda simbólica</h3>
+        <p class="body">No hay que explicar de dónde viene antes de hablar del producto. La marca empieza a trabajar desde el primer segundo.</p></div>
+      <div class="item"><h3>Deja espacio para crecer</h3>
+        <p class="body">Minelly admite ediciones, módulos y una línea editorial sin cambiar de nombre.</p></div>
+    </div>
+  </div>
+
+  <div style="position:absolute; left:20mm; top:250mm; width:170mm;">
+    <div class="quote">Teoamoxtli no desaparece: queda como nombre de la edición de patrimonio y como nombre interno.
+      El Tzicuri se retira junto con la identidad anterior.</div>
+  </div>
+  <div class="pagenum">02</div>
+</div>
+
+<!-- 03 · POSICIONAMIENTO -->
+<div class="page">
+  <div class="pad">
+    <div class="eyebrow">02 · Posicionamiento</div>
+    <h1>Estudio bíblico serio,<br>en español.</h1>
+    <p class="lead" style="margin-top:7mm; width:158mm;">La categoría está dominada por herramientas en inglés,
+      caras y pensadas para otro mercado. Minelly no compite por precio: compite por cercanía, profundidad y confianza.</p>
+  </div>
+
+  <div style="position:absolute; left:20mm; top:92mm; width:80mm;">
+    <div class="eyebrow" style="color:#5B6B7C;">Qué es</div>
+    <p class="body" style="margin-top:3mm;">Un taller de estudio bíblico de escritorio: biblioteca local, lenguas originales,
+      comparación de versiones y preparación de sermones en una sola ventana.</p>
+    <div class="eyebrow" style="color:#5B6B7C; margin-top:9mm;">Para quién</div>
+    <p class="body" style="margin-top:3mm;">El pastor que prepara dos sermones por semana, el seminarista que estudia
+      griego, y el laico que quiere dejar de leer solo el versículo del día.</p>
+  </div>
+
+  <div style="position:absolute; left:110mm; top:92mm; width:80mm;">
+    <div class="eyebrow" style="color:#5B6B7C;">Promesa</div>
+    <p style="font-family:Literata; font-size:16pt; line-height:1.3; color:#0A2038; margin:2.5mm 0 0 0;">
+      Del texto a la predicación.</p>
+    <div class="eyebrow" style="color:#5B6B7C; margin-top:9mm;">Personalidad</div>
+    <p class="body" style="margin-top:3mm;">Erudita sin ser fría. Cálida sin ser informal. Mexicana sin ser folclórica.
+      Directa sin ser seca.</p>
+  </div>
+
+  <div style="position:absolute; left:20mm; top:196mm; width:170mm;">
+    <div class="rule" style="left:0; top:0; width:170mm;"></div>
+    <div class="eyebrow" style="color:#5B6B7C; margin-top:5mm;">Por qué te van a elegir</div>
+    <div style="margin-top:4mm; font-size:9pt; line-height:1.75; color:#33455A;">
+      <b>Biblioteca local</b> que no depende de internet &nbsp;·&nbsp;
+      <b>importa tus módulos</b> de e-Sword y MySword &nbsp;·&nbsp;
+      <b>comparador e interlineal</b> en la misma vista &nbsp;·&nbsp;
+      <b>asistente que cita la fuente</b> en lugar de inventar<br>
+      <b>preparador de sermones</b> conectado a la biblioteca &nbsp;·&nbsp;
+      <b>interfaz en español</b>, no traducida al final
+    </div>
+  </div>
+  <div class="pagenum">03</div>
+</div>
+
+<!-- 04 · LOGOTIPO -->
+<div class="page">
+  <div class="pad">
+    <div class="eyebrow">03 · Logotipo</div>
+    <h1>Tres rutas, una recomendación.</h1>
+  </div>
+
+  <div class="route" style="top:58mm;">
+    <div class="thumb"><img src="logos/icono-A-monograma-curvas.svg"></div>
+    <div class="txt">
+      <div class="tag">Ruta A</div>
+      <h3>Monograma editorial</h3>
+      <p>La M de Literata sobre una línea de texto en cobre. La marca se lee como lo que el producto hace:
+        texto sobre una página. Una tinta, tres formas, funciona a 32 px.</p>
+      <div class="when">Icono de app, favicon, firma del instalador y cabecera de la barra lateral.</div>
+    </div>
+  </div>
+
+  <div class="route" style="top:116mm;">
+    <div class="thumb"><img src="logos/icono-B-codice-curvas.svg"></div>
+    <div class="txt">
+      <div class="tag">Ruta B</div>
+      <h3>Códice</h3>
+      <p>Un libro abierto con separador de cobre. La ruta más literal: dice “Biblia” sin decir “aplicación”.
+        Más cálida, menos distintiva, con más riesgo de parecerse a otras apps bíblicas.</p>
+      <div class="when">Splash, mercancía, edición de patrimonio y materiales impresos.</div>
+    </div>
+  </div>
+
+  <div class="route" style="top:174mm;">
+    <div class="thumb"><img src="logos/icono-C-tipografico-curvas.svg"></div>
+    <div class="txt">
+      <div class="tag">Ruta C</div>
+      <h3>Tipográfico</h3>
+      <p>Sin símbolo: el nombre bien compuesto y un punto de cobre. La ruta más sobria y la que menos
+        envejece, pero depende del nombre para todo el reconocimiento.</p>
+      <div class="when">Sitio web, documentos, firma de correo y ediciones impresas.</div>
+    </div>
+  </div>
+
+  <div class="reco">
+    <div class="tag">Recomendación · Ruta A</div>
+    <p>Es la única que sobrevive a 32 px sin explicación, dialoga con la serif de lectura y no compite con la interfaz.
+      Se implementa como A en el icono, A en el lockup de la app y C como variante tipográfica para documentos.
+      B queda para la edición de patrimonio y el material impreso.</p>
+  </div>
+  <div class="pagenum">04</div>
+</div>
+
+<!-- 05 · SISTEMA -->
+<div class="page">
+  <div class="pad">
+    <div class="eyebrow">04 · Sistema visual</div>
+    <h1>Tinta, papel y cobre.</h1>
+  </div>
+
+  <div style="position:absolute; left:20mm; top:64mm; width:170mm;">
+    <div class="chip" style="left:0; top:0; background:#0A2038;"><div class="name" style="color:#0A2038;">Tinta</div><div class="hex">#0A2038</div></div>
+    <div class="chip" style="left:34mm; top:0; background:#F6F1E7; border:0.3mm solid #E2DDD2;"><div class="name">Pergamino</div><div class="hex">#F6F1E7</div></div>
+    <div class="chip" style="left:68mm; top:0; background:#B87333;"><div class="name">Cobre</div><div class="hex">#B87333</div></div>
+    <div class="chip" style="left:102mm; top:0; background:#8A5A2B;"><div class="name">Cobre oscuro</div><div class="hex">#8A5A2B</div></div>
+    <div class="chip" style="left:136mm; top:0; background:#2C5F8A;"><div class="name">Azul</div><div class="hex">#2C5F8A</div></div>
+  </div>
+
+  <div style="position:absolute; left:20mm; top:122mm; width:170mm;">
+    <div class="rule" style="left:0; top:0; width:170mm;"></div>
+    <div class="eyebrow" style="color:#5B6B7C; margin-top:5mm;">Tipografía</div>
+  </div>
+
+  <div style="position:absolute; left:20mm; top:140mm; width:80mm;">
+    <div class="specimen" style="font-size:30pt; font-weight:600; line-height:1;">Literata</div>
+    <div class="body" style="margin-top:2mm;">Display, títulos y lectura. Serif de pantalla, cálida y muy legible en
+      bloques largos. Ya está embarcada en la app.</div>
+    <div class="note" style="margin-top:3mm;">600 · títulos &nbsp; 400 · lectura</div>
+  </div>
+
+  <div style="position:absolute; left:110mm; top:140mm; width:80mm;">
+    <div style="font-family:Inter; font-size:30pt; font-weight:600; line-height:1; color:#0A2038;">Inter</div>
+    <div class="body" style="margin-top:2mm;">Interfaz, etiquetas y datos. Neutra, compacta, con cifras claras.
+      Es la voz del sistema, no la de la marca.</div>
+    <div class="note" style="margin-top:3mm;">600 · interfaz &nbsp; 400 · texto de apoyo</div>
+  </div>
+
+  <div style="position:absolute; left:20mm; top:196mm; width:170mm;">
+    <div class="rule" style="left:0; top:0; width:170mm;"></div>
+    <div class="eyebrow" style="color:#5B6B7C; margin-top:5mm;">Reglas de uso</div>
+    <div class="body" style="margin-top:3mm; font-size:8.6pt; line-height:1.7;">
+      Espacio de respeto: la altura de la M por cada lado. &nbsp;·&nbsp; Tamaño mínimo del icono: 24 px.<br>
+      No deformar, no rotar, no añadir sombras ni contornos. &nbsp;·&nbsp; No recolorear fuera de la paleta.<br>
+      El descriptor siempre en Inter, en versalitas espaciadas; nunca en Literata.
+    </div>
+  </div>
+  <div class="pagenum">05</div>
+</div>
+
+<!-- 06 · APLICACIÓN -->
+<div class="page">
+  <div class="pad">
+    <div class="eyebrow">05 · En la aplicación</div>
+    <h1>La marca entra sin gritar.</h1>
+  </div>
+
+  <div class="app">
+    <div class="hdr">
+      <img src="logos/icono-A-monograma-curvas.svg">
+      <div class="brand">Minelly</div>
+      <div class="desc">ESTUDIO BÍBLICO</div>
+    </div>
+    <div class="nav">
+      <div class="on">Biblia</div>
+      <div>Comparador</div>
+      <div>Asistente</div>
+      <div>Sermones</div>
+      <div>Recursos</div>
+      <div>Notas</div>
+    </div>
+    <div class="foot">27 recursos · biblioteca local</div>
+  </div>
+
+  <div style="position:absolute; left:110mm; top:82mm; width:80mm;">
+    <p class="body">El lockup vive en la cabecera de la barra lateral, a 12 mm de alto. El icono aporta el
+      reconocimiento; el wordmark, la confianza. La línea de cobre es el único acento de color de la zona.</p>
+    <p class="body" style="margin-top:5mm;">La interfaz no cambia de estructura: cambia el nombre, el icono y el
+      peso tipográfico del encabezado. El resto del sistema ya está alineado con esta paleta.</p>
+    <div class="eyebrow" style="color:#5B6B7C; margin-top:12mm;">Tamaños reales</div>
+    <div class="iconrow" style="margin-top:4mm;">
+      <img src="logos/icono-A-monograma-curvas.svg" style="width:24mm;height:24mm;">
+      <img src="logos/icono-A-monograma-curvas.svg" style="width:12mm;height:12mm;">
+      <img src="logos/icono-A-monograma-curvas.svg" style="width:7mm;height:7mm;">
+    </div>
+    <div class="note" style="margin-top:4mm;">24 · 12 · 7 mm</div>
+  </div>
+
+  <div style="position:absolute; left:20mm; top:238mm; width:170mm;">
+    <div class="rule" style="left:0; top:0; width:170mm;"></div>
+    <div class="note" style="margin-top:5mm;">A 32 px la M y la línea de cobre siguen leyéndose. Ese es el criterio
+      para aprobar cualquier ajuste futuro: si no se reconoce al tamaño del favicon, no es la marca.</div>
+  </div>
+  <div class="pagenum">06</div>
+</div>
+
+<!-- 07 · SIGUIENTES PASOS -->
+<div class="page dark">
+  <div class="pad">
+    <div class="eyebrow">06 · Siguientes pasos</div>
+    <h1>Qué falta para que<br>esto sea marca.</h1>
+  </div>
+
+  <div style="position:absolute; left:20mm; top:88mm; width:82mm;">
+    <div class="item"><h3 style="color:#F6F1E7;">1 · Aprobar la ruta</h3>
+      <p class="body" style="color:#C9D6E4;">A, con C como variante tipográfica y B para impresos. Ajustes de
+        proporción antes de curvas finales.</p></div>
+    <div class="item"><h3 style="color:#F6F1E7;">2 · Curvas y set de iconos</h3>
+      <p class="body" style="color:#C9D6E4;">SVG con contornos, PNG de 32 a 1024, .ico y .icns. Sin dependencia
+        de fuentes instaladas.</p></div>
+    <div class="item"><h3 style="color:#F6F1E7;">3 · Aplicar en código</h3>
+      <p class="body" style="color:#C9D6E4;">productName, título de ventana, splash, barra lateral, README e
+        instaladores. El identificador y .teonotes se migran aparte, con copia.</p></div>
+  </div>
+
+  <div style="position:absolute; left:110mm; top:88mm; width:80mm;">
+    <div class="item"><h3 style="color:#F6F1E7;">4 · Primera impresión</h3>
+      <p class="body" style="color:#C9D6E4;">Instalador, icono en la barra de tareas, primer arranque. Ahí se
+        decide si la marca es creíble.</p></div>
+    <div class="item"><h3 style="color:#F6F1E7;">5 · Landing</h3>
+      <p class="body" style="color:#C9D6E4;">“El texto, en serio.” con capturas reales del comparador, el
+        interlineal y el asistente citando.</p></div>
+  </div>
+
+  <div style="position:absolute; left:20mm; top:196mm; width:170mm;">
+    <div class="rule" style="left:0; top:0; width:170mm; background:#29435F;"></div>
+    <div class="eyebrow" style="margin-top:6mm;">Entregables</div>
+    <p class="body" style="color:#C9D6E4; margin-top:3mm;">Logotipo en SVG fuente y en curvas · lockups en positivo y
+      negativo · icono en 1024/512/256/128/64/32 · paleta y tipografía documentadas · este PDF.</p>
+  </div>
+
+  <div style="position:absolute; left:20mm; bottom:22mm; width:120mm; font-family:Literata; font-size:12pt;
+              color:#F6F1E7; line-height:1.4;">Minelly no necesita un símbolo más. Necesita que el nombre se repita
+    igual en cada pantalla.</div>
+  <div class="cover-meta" style="left:auto; right:20mm; text-align:right;">Minelly Bible Software<br>Propuesta 01</div>
+</div>
+
+</body>
+</html>

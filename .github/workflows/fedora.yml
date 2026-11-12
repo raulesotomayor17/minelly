@@ -1,0 +1,40 @@
+name: Fedora RPM
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-rpm:
+    runs-on: ubuntu-latest
+    container: fedora:43
+    steps:
+      - name: Install git
+        run: dnf install -y git
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          dnf install -y \
+            gcc gcc-c++ make cmake pkgconf-pkg-config \
+            openssl-devel curl wget file patchelf \
+            webkit2gtk4.1-devel gtk3-devel libappindicator-gtk3-devel \
+            librsvg2-devel libxdo-devel rpm-build nodejs npm espeak-ng
+
+      - name: Install Rust
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+
+      - name: Build RPM
+        run: |
+          npm ci
+          npm run tauri build -- --bundles rpm
+
+      - name: Upload RPM
+        uses: actions/upload-artifact@v4
+        with:
+          name: teoamoxtli-fedora-rpm
+          path: src-tauri/target/release/bundle/rpm/*.rpm
+          if-no-files-found: error

@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "feature_name": "unified_global_search_engine",
+  "description": "Especificación arquitectónica para unificar los resultados de búsqueda de módulos estándar, libros personales (PBB) y notas de usuario en una sola interfaz.",
+  "backend_commands": {
+    "search_everything": {
+      "input": { "query": "string" },
+      "execution": [
+        "1. Consultar 'global_search_index' (Biblias, Comentarios, Diccionarios) usando FTS5 MATCH.",
+        "2. Consultar 'pbb_fts' (Libros Personales) usando FTS5 MATCH, haciendo JOIN con 'pbb_books' para obtener el título del libro.",
+        "3. Consultar la tabla 'notes' buscando coincidencias en 'title' o 'content_json' (usando LIKE o un índice FTS si existe).",
+        "4. Unificar todos los resultados en un solo vector (Array) de tipo 'UnifiedSearchResult'."
+      ],
+      "output_model": "UnifiedSearchResult"
+    }
+  },
+  "data_models": {
+    "UnifiedSearchResult": {
+      "type": "object",
+      "properties": {
+        "source_type": { "type": "string", "enum": ["bible", "commentary", "dictionary", "pbb_book", "user_note"] },
+        "resource_id": { "type": "string", "description": "ID del libro, módulo o nota" },
+        "title": { "type": "string", "description": "Título del recurso o de la nota" },
+        "reference": { "type": "string", "description": "Versículo, lema del diccionario o capítulo del PBB" },
+        "snippet": { "type": "string", "description": "Fragmento de texto con las palabras clave resaltadas en <b>...</b>" }
+      }
+    }
+  },
+  "frontend_ui": {
+    "component": "GlobalSearchPanel",
+    "behavior": {
+      "grouping": "Agrupar visualmente los resultados por 'source_type' (Ej. sección de 'Libros Personales', sección de 'Notas', etc.).",
+      "interaction": "Al hacer clic en un resultado de 'pbb_book', el ModularWorkspace debe abrir el panel tipo 'book' cargando ese resource_id. Al hacer clic en 'user_note', debe abrir el NotesWorkspace enfocado en esa nota."
+    }
+  }
+}

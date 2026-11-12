@@ -1,0 +1,616 @@
+{
+  "$comment": "Contrato del Lienzo de Teoamoxtli. Fuente de verdad para el harness: si el código contradice este archivo, gana este archivo. Los valores en px son puntos de partida; ajustar solo con captura de pantalla que lo justifique. v2: corregido con el video de referencia 2026-11-11 10-13-31.mkv (colores muestreados del fotograma del segundo 102).",
+  "version": 2,
+  "engine": {
+    "library": "dockview",
+    "install": "npm install dockview",
+    "reason": "Sustituye el árbol binario propio de ModularWorkspace.tsx. Aporta pestañas, grupos, arrastre con zonas de acoplamiento, grupos flotantes, ventanas emergentes y serialización.",
+    "persistence": {
+      "save": "api.toJSON() dentro de onDidLayoutChange, con debounce de 400 ms",
+      "load": "api.fromJSON(json)",
+      "storageKey": "teoamoxtli.dock-layout.v1",
+      "fallback": "Si fromJSON falla, cargar la plantilla 'estudio' y conservar el JSON roto en teoamoxtli.dock-layout.broken para diagnóstico"
+    },
+    "featureFlag": "teoamoxtli.dock-engine = 'dockview' | 'legacy' (legacy se elimina al aprobar la fase 7)"
+  },
+  "panelKinds": {
+    "bible": {
+      "label": "Biblia",
+      "icon": "book-open",
+      "zone": "main",
+      "needsResource": true,
+      "followsLinkSet": true,
+      "hasReferenceBox": true
+    },
+    "commentary": {
+      "label": "Comentario",
+      "icon": "message-square",
+      "zone": "side",
+      "needsResource": true,
+      "followsLinkSet": true,
+      "hasReferenceBox": true
+    },
+    "dictionary": {
+      "label": "Diccionario",
+      "icon": "book-a",
+      "zone": "sideBottom",
+      "needsResource": true,
+      "followsLinkSet": false,
+      "hasReferenceBox": false
+    },
+    "book": {
+      "label": "Libro",
+      "icon": "book",
+      "zone": "main",
+      "needsResource": true,
+      "followsLinkSet": false,
+      "hasReferenceBox": false
+    },
+    "interlinear": {
+      "label": "Interlineal",
+      "icon": "languages",
+      "zone": "side",
+      "needsResource": false,
+      "followsLinkSet": true,
+      "hasReferenceBox": true
+    },
+    "compare": {
+      "label": "Comparador",
+      "icon": "columns-3",
+      "zone": "side",
+      "needsResource": false,
+      "followsLinkSet": true,
+      "hasReferenceBox": true
+    },
+    "notes": {
+      "label": "Notas",
+      "icon": "notebook-pen",
+      "zone": "sideBottom",
+      "needsResource": false,
+      "followsLinkSet": false,
+      "hasReferenceBox": false
+    },
+    "search": {
+      "label": "Buscar",
+      "icon": "search",
+      "zone": "sideBottom",
+      "needsResource": false,
+      "followsLinkSet": false,
+      "hasReferenceBox": false
+    }
+  },
+  "panelParams": {
+    "$comment": "Lo que cada pestaña guarda en params de dockview. Nada de estado de panel vive fuera de aquí.",
+    "kind": "clave de panelKinds",
+    "resourceId": "string | null",
+    "reference": "OSIS, p. ej. 'DEU.1.3' | null",
+    "linkSet": "'A' | 'B' | 'C' | 'D' | 'E' | 'F' | null",
+    "scrollTop": "number",
+    "compareIds": "string[] (solo compare)",
+    "fontScale": "number, 0.8 a 2.2"
+  },
+  "behavior": {
+    "tabs": {
+      "title": "Abreviatura del recurso si existe; si no, título truncado a 22 caracteres. Título completo en tooltip.",
+      "showKindIcon": true,
+      "showLinkSetDot": "Punto de color del link set a la izquierda del título; sin punto si linkSet es null",
+      "closeButton": "Visible en la pestaña activa y al pasar el puntero en las demás",
+      "middleClick": "cerrar",
+      "doubleClick": "maximizar / restaurar el grupo",
+      "dragOut": "Arrastrar fuera del área de acople crea grupo flotante",
+      "contextMenu": [
+        "Cerrar",
+        "Cerrar las demás",
+        "Duplicar",
+        "Mover a ventana flotante",
+        "Abrir en ventana nueva",
+        "Link set ▸ A–F / Ninguno"
+      ]
+    },
+    "openResource": {
+      "$comment": "Regla que hoy falta: el usuario nunca elige 'tipo de panel'. Abre un recurso y el sistema decide dónde.",
+      "rules": [
+        "1. Si el recurso ya está abierto en alguna pestaña: activarla y enfocarla. No duplicar.",
+        "2. Si hay un grupo marcado como destino ('Enviar aquí'): abrir ahí como pestaña nueva.",
+        "3. Si existe un grupo cuya pestaña activa es del mismo kind: abrir ahí como pestaña nueva.",
+        "4. Si no: crear grupo en la zona del kind (main = izquierda, side = derecha, sideBottom = debajo de side).",
+        "5. La pestaña nueva hereda el linkSet y la referencia del grupo donde cae, si su kind tiene followsLinkSet."
+      ],
+      "modifiers": {
+        "ctrlClick": "abrir en pestaña nueva del grupo activo",
+        "shiftClick": "abrir en grupo flotante"
+      }
+    },
+    "linkSets": {
+      "ids": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F"
+      ],
+      "colors": {
+        "A": "#5B9DFF",
+        "B": "#F2B84B",
+        "C": "#5FD0A5",
+        "D": "#E77BB0",
+        "E": "#B08CFF",
+        "F": "#FF8A5C"
+      },
+      "keepExistingBus": true,
+      "note": "Se conserva el bus actual (sourcePaneId, linkSet, reference, canonicalBook, triggerType) y su supresión de eventos programáticos. Solo cambia de dónde lee la lista de paneles: de dockview.panels.",
+      "defaultOnOpen": "A para bible, commentary, interlineal y compare; null para el resto",
+      "ui": "Botón 'Conjunto de enlaces ▾' en la cinta Inicio; al pulsarlo, menú con A–F y Ninguno. En la pestaña, un punto de color si tiene link set."
+    },
+    "dropZones": {
+      "onGroup": [
+        "center (añade como pestaña)",
+        "left",
+        "right",
+        "top",
+        "bottom"
+      ],
+      "onRoot": [
+        "left",
+        "right",
+        "top",
+        "bottom"
+      ],
+      "overlay": "Rectángulo de color accent al 18 % con borde accent 1px que muestra el área exacta donde caerá el panel",
+      "newSplitRatio": 0.5
+    },
+    "floating": {
+      "defaultSize": {
+        "width": 520,
+        "height": 420
+      },
+      "minSize": {
+        "width": 320,
+        "height": 220
+      },
+      "keepInBounds": true,
+      "priority": "Baja. En el video de referencia no aparece ninguna ventana flotante: todo queda en mosaico. Implementar solo después de la fase 7."
+    },
+    "shortcuts": {
+      "Ctrl+W": "cerrar pestaña activa",
+      "Ctrl+Tab": "pestaña siguiente del grupo",
+      "Ctrl+Shift+Tab": "pestaña anterior del grupo",
+      "Ctrl+Alt+Flechas": "mover el foco al grupo vecino",
+      "Ctrl+G": "enfocar la caja de referencia del panel activo",
+      "Ctrl+O": "abrir recurso (paleta de biblioteca)",
+      "F11": "maximizar / restaurar el grupo activo"
+    },
+    "tiling": {
+      "rule": "El área siempre queda cubierta por completo: al cerrar o mover un grupo, los vecinos ocupan el hueco de inmediato.",
+      "observed": "En el video se reordenan cuatro grupos (Comparación, Biblia, comentario, libro) entre columnas y filas arrastrando pestañas, sin huecos ni solapes."
+    },
+    "errors": {
+      "missingResource": "Si la pestaña apunta a un recurso o documento borrado, el panel muestra un aviso de una línea con icono ('No se ha encontrado este documento; es posible que se haya eliminado') y la pestaña sigue pudiendo cerrarse."
+    }
+  },
+  "chrome": {
+    "$comment": "v2. Medido en el video: una fila de pestañas y hasta tres filas de panel. La barra global del Lienzo desaparece; sus funciones van a la barra lateral.",
+    "rows": [
+      {
+        "id": "tabStrip",
+        "height": 40,
+        "background": "bg.app",
+        "contains": [
+          "pestañas con miniatura de portada o icono + título corto + ×",
+          "botón + pegado a la última pestaña"
+        ],
+        "note": "Las pestañas flotan sobre el fondo de la app; solo la activa comparte color con el panel."
+      },
+      {
+        "id": "panelToolbar",
+        "height": 40,
+        "contains": [
+          "flecha atrás",
+          "caja de referencia con icono del recurso",
+          "pestañas de cinta: Inicio, Búsqueda, Notas, Formato, Vista, Más ▾",
+          "a la derecha: contraer cinta ⌃ y menú ⋮"
+        ]
+      },
+      {
+        "id": "ribbon",
+        "height": 36,
+        "collapsible": true,
+        "contains": [
+          "acciones de la pestaña de cinta activa. En Inicio: Contenido, Favoritos, Historia, Artículo ▾ con ↑ ↓, Conjunto de enlaces ▾, información"
+        ]
+      },
+      {
+        "id": "locator",
+        "height": 28,
+        "dismissible": true,
+        "contains": [
+          "migas de ubicación: Libro › Capítulo, o Sección › Subsección en comentarios",
+          "× para ocultarla"
+        ]
+      }
+    ],
+    "remove": [
+      "Fila 'Entorno rápido / Añadir herramienta / + Acoplado / + Flotante' (pasa al menú Entornos y al botón +)",
+      "Selector de tipo de panel (Biblia / Comentario / Diccionario) en cada panel",
+      "Selector de recurso duplicado bajo la pestaña (la pestaña ya es el recurso; cambiar de recurso = menú de la pestaña o botón +)",
+      "Tres selectores separados de libro, capítulo y versículo (se fusionan en la caja de referencia)",
+      "Glifos Unicode como iconos (⇔ ⇕ ⇄ ⧉ ×): usar un único set de iconos SVG de 16 px con trazo 1.5",
+      "Todo <select> nativo dentro del Lienzo",
+      "Toda la barra superior 'LIENZO MODULAR / Diseño de estudio / Lectura / Estudio / Personalizar / Papel / Guardar / Cargar / Exportar / Importar / Volver': fuentes y papel pasan a la cinta Formato y Vista de cada panel; guardar, cargar, exportar e importar pasan a 'Entornos' en la barra lateral",
+      "El botón Volver (ya no hay de dónde volver)"
+    ],
+    "referenceBox": {
+      "width": 180,
+      "accepts": [
+        "Dt 1:3",
+        "Deuteronomio 1.3",
+        "deut 1 3",
+        "jn3:16",
+        "1 co 13"
+      ],
+      "onEnter": "navegar y publicar en el bus si hay linkSet",
+      "dropdown": "rejilla de libros → capítulos → versículos al pulsar la flecha"
+    },
+    "responsive": {
+      "rule": "Cuando el panel es estrecho, las pestañas de cinta que no caben se pliegan dentro de 'Más ▾' de derecha a izquierda; en el panel más estrecho solo queda 'Más ▾'. Las etiquetas de la cinta se reducen a iconos. Nunca hay salto de línea ni scroll horizontal en las barras.",
+      "implementation": "ResizeObserver por panel; no usar media queries de ventana"
+    },
+    "toolPanels": {
+      "compare": "Una sola fila: caja de referencia + 'en RVR60, LBLA, …' (clic para elegir versiones) + selector Versículos ▾ + ⋮. Cabecera de columnas con la abreviatura en color de enlace.",
+      "sermon": "Fila de cinta propia: Editar, Texto, Diapositivas, Más ▾; a la derecha Predicar, Exportar, imprimir."
+    }
+  },
+  "tokens": {
+    "$comment": "Variables CSS. Aplicar con :root[data-theme=...]. No escribir colores sueltos en componentes.",
+    "color": {
+      "bg.app": "#14181C",
+      "bg.panel": "#282E36",
+      "bg.raised": "#313844",
+      "bg.hover": "#20242A",
+      "bg.active": "#20242A",
+      "border.subtle": "#3C4452",
+      "border.strong": "#313B4A",
+      "text.primary": "#E5EBF3",
+      "text.secondary": "#9AA6B6",
+      "text.muted": "#6B7686",
+      "accent": "#5894E4",
+      "accent.soft": "rgba(88,148,228,0.18)",
+      "danger": "#F0736A",
+      "focus": "#FEB080",
+      "$measured": "bg.app, bg.panel, text.primary, accent (enlaces) y focus (línea de la pestaña con foco) están muestreados del video. El resto son derivados."
+    },
+    "radius": {
+      "control": 6,
+      "panel": 8,
+      "popover": 10
+    },
+    "space": {
+      "1": 4,
+      "2": 8,
+      "3": 12,
+      "4": 16,
+      "5": 24
+    },
+    "font": {
+      "ui": {
+        "family": "Inter",
+        "size": 13,
+        "weight": 500,
+        "lineHeight": 1.3
+      },
+      "uiSmall": {
+        "family": "Inter",
+        "size": 12,
+        "weight": 500
+      },
+      "reading": {
+        "family": "Literata",
+        "size": 18,
+        "lineHeight": 1.65,
+        "maxWidthCh": 72
+      },
+      "study": {
+        "family": "Crimson Pro",
+        "size": 16,
+        "lineHeight": 1.55,
+        "maxWidthCh": 68
+      },
+      "verseNumber": {
+        "family": "Inter",
+        "size": 11,
+        "color": "text.muted"
+      },
+      "links": {
+        "color": "accent",
+        "underline": false,
+        "note": "Citas bíblicas y números de versículo del comparador en color accent"
+      }
+    },
+    "panel": {
+      "gap": 4,
+      "border": "none",
+      "separation": "Los grupos se separan por el fondo bg.app visible en el gap, no por bordes",
+      "activeIndicator": "Línea 'focus' (naranja) de 2 px sobre la pestaña activa del grupo con foco. La pestaña de cinta activa lleva subrayado 'accent' (azul) de 2 px.",
+      "contentPadding": {
+        "x": 24,
+        "y": 16
+      },
+      "tabShape": "Esquinas superiores redondeadas 6 px; pestaña activa en bg.panel, inactivas transparentes sobre bg.app"
+    },
+    "control": {
+      "height": 28,
+      "style": "ghost: sin borde ni fondo en reposo; bg.hover al pasar el puntero; bg.active si está activo",
+      "iconSize": 16
+    },
+    "motion": {
+      "fast": "120ms ease-out",
+      "overlay": "160ms ease-out"
+    }
+  },
+  "layoutTemplates": {
+    "$comment": "Forma neutral. El harness las construye con la API de dockview y guarda el resultado con toJSON(); no escribir a mano el formato serializado de dockview. La plantilla 'video' reproduce la disposición final del video de referencia.",
+    "estudio": {
+      "label": "Estudio",
+      "groups": [
+        {
+          "id": "g1",
+          "position": "root",
+          "size": 0.58,
+          "tabs": [
+            {
+              "kind": "bible",
+              "resource": "preferredBible",
+              "linkSet": "A"
+            }
+          ]
+        },
+        {
+          "id": "g2",
+          "position": {
+            "rightOf": "g1"
+          },
+          "size": 0.42,
+          "tabs": [
+            {
+              "kind": "commentary",
+              "resource": "firstAvailable",
+              "linkSet": "A"
+            },
+            {
+              "kind": "interlinear",
+              "linkSet": "A"
+            }
+          ]
+        },
+        {
+          "id": "g3",
+          "position": {
+            "below": "g2"
+          },
+          "size": 0.38,
+          "tabs": [
+            {
+              "kind": "dictionary",
+              "resource": "firstAvailable"
+            },
+            {
+              "kind": "notes"
+            }
+          ]
+        }
+      ]
+    },
+    "comparar": {
+      "label": "Comparar versiones",
+      "groups": [
+        {
+          "id": "g1",
+          "position": "root",
+          "size": 0.5,
+          "tabs": [
+            {
+              "kind": "bible",
+              "resource": "preferredBible",
+              "linkSet": "A"
+            }
+          ]
+        },
+        {
+          "id": "g2",
+          "position": {
+            "rightOf": "g1"
+          },
+          "size": 0.5,
+          "tabs": [
+            {
+              "kind": "compare",
+              "linkSet": "A"
+            }
+          ]
+        }
+      ]
+    },
+    "idiomasOriginales": {
+      "label": "Idiomas originales",
+      "groups": [
+        {
+          "id": "g1",
+          "position": "root",
+          "size": 0.45,
+          "tabs": [
+            {
+              "kind": "bible",
+              "resource": "preferredBible",
+              "linkSet": "A"
+            }
+          ]
+        },
+        {
+          "id": "g2",
+          "position": {
+            "rightOf": "g1"
+          },
+          "size": 0.55,
+          "tabs": [
+            {
+              "kind": "interlinear",
+              "linkSet": "A"
+            }
+          ]
+        },
+        {
+          "id": "g3",
+          "position": {
+            "below": "g2"
+          },
+          "size": 0.4,
+          "tabs": [
+            {
+              "kind": "dictionary",
+              "resource": "strongLexicon"
+            }
+          ]
+        }
+      ]
+    },
+    "sermon": {
+      "label": "Preparar sermón",
+      "groups": [
+        {
+          "id": "g1",
+          "position": "root",
+          "size": 0.4,
+          "tabs": [
+            {
+              "kind": "bible",
+              "resource": "preferredBible",
+              "linkSet": "A"
+            },
+            {
+              "kind": "commentary",
+              "resource": "firstAvailable",
+              "linkSet": "A"
+            }
+          ]
+        },
+        {
+          "id": "g2",
+          "position": {
+            "rightOf": "g1"
+          },
+          "size": 0.6,
+          "tabs": [
+            {
+              "kind": "notes"
+            }
+          ]
+        }
+      ]
+    },
+    "lectura": {
+      "label": "Solo lectura",
+      "groups": [
+        {
+          "id": "g1",
+          "position": "root",
+          "size": 1,
+          "tabs": [
+            {
+              "kind": "bible",
+              "resource": "preferredBible",
+              "linkSet": null
+            }
+          ]
+        }
+      ]
+    },
+    "video": {
+      "label": "Estudio de pasaje",
+      "groups": [
+        {
+          "id": "g1",
+          "position": "root",
+          "size": 0.42,
+          "tabs": [
+            {
+              "kind": "compare",
+              "linkSet": "A"
+            }
+          ]
+        },
+        {
+          "id": "g2",
+          "position": {
+            "rightOf": "g1"
+          },
+          "size": 0.58,
+          "tabs": [
+            {
+              "kind": "commentary",
+              "resource": "firstAvailable",
+              "linkSet": "A"
+            },
+            {
+              "kind": "notes"
+            }
+          ]
+        },
+        {
+          "id": "g3",
+          "position": {
+            "below": "g1"
+          },
+          "size": 0.4,
+          "tabs": [
+            {
+              "kind": "bible",
+              "resource": "preferredBible",
+              "linkSet": "A"
+            }
+          ]
+        },
+        {
+          "id": "g4",
+          "position": {
+            "below": "g2"
+          },
+          "size": 0.4,
+          "tabs": [
+            {
+              "kind": "book",
+              "resource": "firstAvailable"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "migration": {
+    "from": "Perfiles antiguos con árbol binario PaneNode (tabs, activeTabId, ventanas flotantes)",
+    "steps": [
+      "Recorrer el árbol en profundidad; cada hoja es un grupo, cada PaneTab una pestaña",
+      "Cada división horizontal/vertical se traduce a rightOf/below respecto del primer grupo de la rama hermana, conservando la proporción",
+      "Las ventanas flotantes pasan a grupos flotantes con su posición y tamaño",
+      "Guardar el perfil migrado con sufijo ' (migrado)' y no borrar el original"
+    ]
+  },
+  "shell": {
+    "$comment": "Cambio principal de la v2. En el video no existe un 'modo Lienzo' aparte: el área de paneles ES la aplicación.",
+    "rule": "El Lienzo deja de ser una pantalla superpuesta con botón Volver. La barra lateral de la app queda siempre visible a la izquierda y el área de paneles ocupa todo lo demás.",
+    "sidebar": {
+      "width": 130,
+      "alwaysVisible": true,
+      "items": "icono + etiqueta, sin cajas",
+      "sections": [
+        "navegación (Panel de control, Biblioteca, Buscar, Biblia, Asistente, Documentos, Guías, Herramientas)",
+        "accesos fijados por el usuario (recursos anclados)",
+        "pie (Ayuda, Entornos, Cerrar todo)"
+      ]
+    },
+    "home": "Sin ninguna pestaña abierta, el área de paneles muestra el Panel de control. Al abrir el primer recurso, el Panel de control desaparece y aparece el primer grupo.",
+    "closeAll": "'Cerrar todo' en el pie de la barra lateral cierra todas las pestañas y vuelve al Panel de control. Deshabilitado si no hay pestañas.",
+    "everythingIsATab": "Comparador, Sermones, Ayuda, Asistente, Notas y Buscar se abren como pestañas en el área de paneles, igual que una Biblia. Ninguna herramienta abre una pantalla aparte ni un modal a pantalla completa.",
+    "emptyRegion": "Con un solo grupo que no ocupa todo el ancho, la zona libre muestra un '+' centrado y tenue; al pulsarlo se abre la paleta de recursos y lo elegido crea un grupo ahí."
+  }
+}

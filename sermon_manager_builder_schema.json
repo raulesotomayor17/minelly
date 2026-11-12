@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "feature_name": "sermon_manager_and_builder",
+  "description": "Especificación arquitectónica para el Administrador de Sermones (Grid de metadatos) y el Preparador de Sermones (Editor de bloques multiformato) de Teoamoxtli.",
+  "database_schema": {
+    "table_sermons": {
+      "columns": {
+        "id": "TEXT PRIMARY KEY (UUID)",
+        "title": "TEXT",
+        "series": "TEXT",
+        "series_number": "INTEGER",
+        "topics": "TEXT (JSON Array)",
+        "passages": "TEXT (JSON Array de referencias canónicas)",
+        "tags": "TEXT (JSON Array)",
+        "speaker": "TEXT",
+        "venue": "TEXT",
+        "date_time": "DATETIME",
+        "audience": "TEXT",
+        "content_json": "TEXT (El documento del sermón en formato TipTap/Lexical JSON)",
+        "created_at": "DATETIME",
+        "updated_at": "DATETIME"
+      }
+    }
+  },
+  "modules": {
+    "SermonManager": {
+      "ui_layout": "Data Grid (Tabla) a la izquierda, Panel de Metadatos a la derecha.",
+      "columns": ["Semana/Fecha", "Lugar", "Servicio", "Título", "Serie"],
+      "filters": ["Serie", "Lugar", "Servicio", "Temas", "Libro bíblico"],
+      "action": "Al hacer clic en un sermón, el panel derecho muestra sus metadatos. Al hacer doble clic, se abre en una nueva pestaña del SermonBuilder."
+    },
+    "SermonBuilder": {
+      "editor_framework": "TipTap (React) / ProseMirror",
+      "views": ["Editar", "Texto", "Diapositivas", "Hoja informativa", "Preguntas"],
+      "custom_nodes": {
+        "SermonHeading": {
+          "levels": [1, 2, 3, 4, 5],
+          "behavior": "Añade automáticamente el texto al panel lateral de 'Bosquejo' y genera un objeto de diapositiva en la vista 'Diapositivas'."
+        },
+        "Blockquote": {
+          "behavior": "Estiliza la cita y permite fondo dinámico en su diapositiva."
+        },
+        "FillInTheBlank": {
+          "behavior": "Envuelve el texto seleccionado. En la vista 'Editar' se ve subrayado azul. En la vista 'Hoja informativa' se reemplaza por una línea vacía (____) para impresión."
+        },
+        "BiblePassage": {
+          "behavior": "Bloque dinámico insertado al escribir una cita y presionar Alt+Enter. Extrae el texto de la DB SQLite y lo renderiza en modo lectura."
+        }
+      }
+    }
+  }
+}
