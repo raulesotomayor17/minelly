@@ -116,9 +116,17 @@ pub fn read_docx(path: &Path) -> Result<DocxDocument> {
         }
     }
 
+    let healed = autosanear_paragraphs(&mut paragraphs);
     let core = parse_core(&core_xml)?;
     let company = parse_app(&app_xml)?;
     let mut issues = Vec::new();
+    if healed > 0 {
+        issues.push(DocxIssue {
+            code: "AUTO_HEAL".to_string(),
+            severity: "info".to_string(),
+            message: format!("Auto-sanación: {healed} imperfecciones corregidas automáticamente."),
+        });
+    }
     let start_level = paragraphs
         .iter()
         .filter_map(|paragraph| paragraph.heading_level)
@@ -345,6 +353,89 @@ pub fn read_docx(path: &Path) -> Result<DocxDocument> {
         issues,
         cover,
     })
+}
+
+fn clean_visible_text(value: &str) -> String {
+    value.replace(['\u{00ad}', '\u{200b}', '\u{feff}'], "").trim().to_string()
+}
+
+fn is_page_number(text: &str) -> bool {
+    let lower = text.to_lowercase();
+    let stripped = lower.trim();
+    let numeric = stripped
+        .trim_start_matches("pág.").trim_start_matches("pág")
+        .trim_start_matches("page").trim_start_matches('p').trim();
+    (!numeric.is_empty() && numeric.chars().all(|c| c.is_ascii_digit()) && numeric.len() <= 4)
+        || (!stripped.is_empty()
+            && stripped.chars().all(|c| "ivxlcdm".contains(c))
+            && stripped.len() <= 8)
+}
+
+fn autosanear_paragraphs(paragraphs: &mut Vec<Paragraph>) -> usize {
+    use std::collections::{HashMap, HashSet};
+    let invisible = |value: &str| value.replace(['\u{00ad}', '\u{200b}', '\u{feff}'], "");
+    let page_re = Regex::new(r"(?i)\b(?:Gn|Éx|Ex|Lv|Nm|Dt|Jos|Jue|Rt|1S|2S|1R|2R|1Cr|2Cr|Esd|Neh|Est|Job|Sal|Pr|Ec|Cant|Is|Jer|Lm|Ez|Dn|Os|Jl|Am|Abd|Jon|Mi|Nah|Hab|Sof|Hag|Zac|Mal|Mt|Mc|Lc|Jn|Hch|Ro|1Co|2Co|Gá|Ef|Fil|Col|1Ts|2Ts|1Ti|2Ti|Tit|Flm|Heb|Stg|1P|2P|1Jn|2Jn|3Jn|Jud|Ap)\s*\d+").unwrap();
+    let mut counts: HashMap<String, usize> = HashMap::new();
+    for paragraph in paragraphs.iter() {
+        let text = clean_visible_text(&invisible(&paragraph.text));
+        if !text.is_empty() && text.chars().count() <= 85 && !page_re.is_match(&text) {
+            let key = Regex::new(r"\d+").unwrap().replace_all(&text.to_lowercase(), "#").to_string();
+            *counts.entry(key).or_insert(0) += 1;
+        }
+    }
+    let repeated: HashSet<String> = counts.into_iter().filter(|(_, n)| *n >= 4).map(|(k, _)| k).collect();
+    let mut healed = 0;
+    let mut cleaned: Vec<Paragraph> = Vec::new();
+    for mut paragraph in paragraphs.drain(..) {
+        paragraph.text = clean_visible_text(&invisible(&paragraph.text));
+        paragraph.html = invisible(&paragraph.html).replace("A_UNKNOWN", "");
+        paragraph.text = paragraph.text.replace("A_UNKNOWN", "");
+        if paragraph.heading_level.is_some() && paragraph.text.is_empty() {
+            // Imagen: se conserva como párrafo normal. Texto vacío: se descarta.
+            if paragraph.html.contains("<img") {
+                paragraph.heading_level = None;
+                cleaned.push(paragraph);
+            }
+            healed += 1;
+            continue;
+        }
+        if paragraph.heading_level.is_none() && is_page_number(&paragraph.text) {
+            healed += 1;
+            continue;
+        }
+        let key = Regex::new(r"\d+").unwrap().replace_all(&paragraph.text.to_lowercase(), "#").to_string();
+        if paragraph.heading_level.is_none()
+            && paragraph.text.chars().count() <= 85
+            && repeated.contains(&key)
+            && !page_re.is_match(&paragraph.text)
+        {
+            healed += 1;
+            continue;
+        }
+        cleaned.push(paragraph);
+    }
+    // Costura de párrafos partidos por salto de página.
+    let mut stitched: Vec<Paragraph> = Vec::new();
+    for paragraph in cleaned {
+        if paragraph.heading_level.is_none() {
+            if let Some(previous) = stitched.last_mut() {
+                if previous.heading_level.is_none() {
+                    let end = previous.text.chars().last().unwrap_or(' ');
+                    let start = paragraph.text.chars().next().unwrap_or(' ');
+                    let broken_end = end.is_lowercase() || matches!(end, ',' | ';' | ':');
+                    if broken_end && start.is_lowercase() {
+                        previous.text = format!("{} {}", previous.text.trim_end(), paragraph.text.trim_start());
+                        previous.html = format!("<p>{}</p>", escape_html(&previous.text));
+                        healed += 1;
+                        continue;
+                    }
+                }
+            }
+        }
+        stitched.push(paragraph);
+    }
+    *paragraphs = stitched;
+    healed
 }
 
 fn close_article(
