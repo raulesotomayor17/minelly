@@ -16333,3 +16333,11 @@ html:is([data-theme="white"],[data-theme="warm"],[data-theme="terracotta"],[data
 .mod-pane.pane-appearance-sepia { --panel: #f4ecd8; --panel-2: #e8dcc0; --text: #2b2118; --muted: #5c4a32; --border: #cdbb98; --border-soft: #dfd0b4; background: #f4ecd8; }
 .mod-pane.pane-appearance-contrast { --panel: #000000; --panel-2: #111111; --text: #ffffff; --muted: #ffff00; --border: #ffff00; --border-soft: #ffff00; background: #000000; }
 .mod-pane.pane-appearance-light .mod-pane-body, .mod-pane.pane-appearance-dark .mod-pane-body, .mod-pane.pane-appearance-sepia .mod-pane-body, .mod-pane.pane-appearance-contrast .mod-pane-body { background: var(--panel); color: var(--text); }
+
+.dock-pane-controls { display: flex; align-items: center; gap: 3px; padding: 4px 7px; border-bottom: 1px solid var(--border-soft); background: var(--bg-card, var(--panel)); }
+.dock-pane-controls button, .dock-pane-controls select { height: 24px; padding: 0 6px; border: 1px solid var(--border-soft); border-radius: 4px; background: var(--bg-input, var(--panel-2)); color: var(--text-primary, var(--text)); font-size: 11px; }
+.dock-pane-scaled { min-height: 0; flex: 1; overflow: auto; }
+.pane-appearance-light { --panel: #fff; --panel-2: #f3f4f6; --text: #111827; --muted: #374151; --border: #d1d5db; --border-soft: #e5e7eb; background: #fff; }
+.pane-appearance-dark { --panel: #111827; --panel-2: #1f2937; --text: #f9fafb; --muted: #d1d5db; --border: #374151; --border-soft: #4b5563; background: #111827; }
+.pane-appearance-sepia { --panel: #f4ecd8; --panel-2: #e8dcc0; --text: #2b2118; --muted: #5c4a32; --border: #cdbb98; --border-soft: #dfd0b4; background: #f4ecd8; }
+.pane-appearance-contrast { --panel: #000; --panel-2: #111; --text: #fff; --muted: #ff0; --border: #ff0; --border-soft: #ff0; background: #000; }
