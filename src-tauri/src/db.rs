@@ -5,6 +5,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use anyhow::{Context, Result};
 use flate2::read::GzDecoder;
+use regex::Regex;
 use rusqlite::{params, Connection, OptionalExtension, Row};
 
 use crate::books::book_name;
@@ -1186,6 +1187,48 @@ impl Catalog {
             tx.execute(&sql, [resource_id])?;
         }
         tx.execute("DELETE FROM resources WHERE id = ?1", [resource_id])?;
+        tx.commit()?;
+        Ok(())
+    }
+
+    pub fn split_epub_chapter(
+        &mut self, resource_id: &str, spine: i64, before_html: &str,
+        after_html: &str, new_title: &str,
+    ) -> Result<Vec<EpubChapterSummary>> {
+        let tx = self.connection.transaction()?;
+        tx.execute("UPDATE epub_chapters SET html=?1 WHERE resource_id=?2 AND spine=?3", params![before_html, resource_id, spine])?;
+        tx.execute("UPDATE epub_chapters SET spine=spine+1 WHERE resource_id=?1 AND spine>?2 ORDER BY spine DESC", params![resource_id, spine])?;
+        tx.execute("INSERT INTO epub_chapters(resource_id,spine,title,href,html) VALUES(?1,?2,?3,?4,?5)",
+            params![resource_id, spine + 1, new_title, format!("pbb://{resource_id}/{}", spine + 1), after_html])?;
+        tx.execute("UPDATE resources SET entry_count=(SELECT COUNT(*) FROM epub_chapters WHERE resource_id=?1) WHERE id=?1", [resource_id])?;
+        tx.commit()?;
+        self.epub_chapters(resource_id)
+    }
+
+    pub fn merge_epub_chapter_with_previous(&mut self, resource_id: &str, spine: i64) -> Result<Vec<EpubChapterSummary>> {
+        if spine <= 0 { return self.epub_chapters(resource_id); }
+        let tx = self.connection.transaction()?;
+        let previous: String = tx.query_row("SELECT html FROM epub_chapters WHERE resource_id=?1 AND spine=?2", params![resource_id, spine - 1], |row| row.get(0))?;
+        let current: (String, String) = tx.query_row("SELECT title,html FROM epub_chapters WHERE resource_id=?1 AND spine=?2", params![resource_id, spine], |row| Ok((row.get(0)?, row.get(1)?)))?;
+        let merged = format!("{}<h2 class=\"editorial-part-kicker\">{}</h2>{}", previous, current.0, current.1);
+        tx.execute("UPDATE epub_chapters SET html=?1 WHERE resource_id=?2 AND spine=?3", params![merged, resource_id, spine - 1])?;
+        tx.execute("DELETE FROM epub_chapters WHERE resource_id=?1 AND spine=?2", params![resource_id, spine])?;
+        tx.execute("UPDATE epub_chapters SET spine=spine-1 WHERE resource_id=?1 AND spine>?2 ORDER BY spine ASC", params![resource_id, spine])?;
+        tx.execute("UPDATE resources SET entry_count=(SELECT COUNT(*) FROM epub_chapters WHERE resource_id=?1) WHERE id=?1", [resource_id])?;
+        tx.commit()?;
+        self.epub_chapters(resource_id)
+    }
+
+    pub fn rename_epub_chapter(&mut self, resource_id: &str, spine: i64, new_title: &str) -> Result<()> {
+        let tx = self.connection.transaction()?;
+        let html: String = tx.query_row("SELECT html FROM epub_chapters WHERE resource_id=?1 AND spine=?2", params![resource_id, spine], |row| row.get(0))?;
+        let heading = Regex::new(r"(?is)<h1[^>]*>.*?</h1>").unwrap();
+        let updated = if heading.is_match(&html) {
+            heading.replace(&html, format!("<h1>{}</h1>", new_title.replace('<', "&lt;").replace('>', "&gt;"))).to_string()
+        } else {
+            format!("<h1>{}</h1>{}", new_title.replace('<', "&lt;").replace('>', "&gt;"), html)
+        };
+        tx.execute("UPDATE epub_chapters SET title=?1, html=?2 WHERE resource_id=?3 AND spine=?4", params![new_title, updated, resource_id, spine])?;
         tx.commit()?;
         Ok(())
     }
