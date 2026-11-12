@@ -1,6 +1,6 @@
 [package]
 name = "teoamoxtli"
-version = "0.1.0"
+version = "0.2.0"
 description = "Teoamoxtli: estudio bíblico local y multiplataforma"
 authors = ["Teoamoxtli"]
 edition = "2024"

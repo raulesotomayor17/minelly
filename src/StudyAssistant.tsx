@@ -394,7 +394,7 @@ function buildHarvardLocalSynthesis(
     "---",
     "",
     "## I. Planteamiento Exegético y Metodología",
-    `Desde la perspectiva de la **${persona.title}** (${persona.subtitle}), el estudio riguroso de *«${query}»* exige articular tres niveles de evidencia documental presentes en tu biblioteca de Teoamoxtli: (1) el testimonio textual bíblico primario, (2) la recepción hermenéutica en los comentarios exegéticos, y (3) la precisión semántica y monográfica aportada por los diccionarios y libros especializados.`,
+    `Desde la perspectiva de la **${persona.title}** (${persona.subtitle}), el estudio riguroso de *«${query}»* exige articular tres niveles de evidencia documental presentes en tu biblioteca de Minelly: (1) el testimonio textual bíblico primario, (2) la recepción hermenéutica en los comentarios exegéticos, y (3) la precisión semántica y monográfica aportada por los diccionarios y libros especializados.`,
     keyTerms.length > 0
       ? `\n**Ejes semánticos detectados en la consulta:** ${keyTerms.map((t) => `\`${t}\``).join(" · ")}.`
       : "",

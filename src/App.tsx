@@ -3334,8 +3334,8 @@ function App() {
 
   function renderRibbonTools() {
     return (
-      <button type="button" className="tool-button ribbon-open-button" onClick={() => setBookmarksOpen((value) => !value)} title="Separador y marcadores">
-        <RibbonIcon size={15} color="#d97706" /> Separador / Marcadores
+      <button type="button" className="tool-button ribbon-open-button" onClick={() => setBookmarksOpen((value) => !value)} title="Bitácora de lectura: separador, marcadores e historial">
+        <RibbonIcon size={15} color="#d97706" /> Bitácora
       </button>
     );
   }
