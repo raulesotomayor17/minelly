@@ -85,6 +85,7 @@ interface PersonalBookBuilderProps {
 }
 
 const RESOURCE_TYPES = [
+  "Bible",
   "Monograph",
   "Commentary",
   "Bible Harmony",
@@ -93,6 +94,7 @@ const RESOURCE_TYPES = [
 ];
 
 const TYPE_LABELS: Record<string, string> = {
+  Bible: "Biblia",
   Monograph: "Monografía",
   Commentary: "Comentario",
   "Bible Harmony": "Armonía bíblica",

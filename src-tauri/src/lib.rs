@@ -131,6 +131,7 @@ pub fn run() {
             commands::update_book_chapter_html,
             commands::repair_all_books_typesetting,
             commands::repair_book_typesetting,
+            commands::reconstruct_book_structure,
             commands::learning_session_list,
             commands::learning_session_get,
             commands::learning_session_save,
