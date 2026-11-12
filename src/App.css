@@ -16341,3 +16341,63 @@ html:is([data-theme="white"],[data-theme="warm"],[data-theme="terracotta"],[data
 .pane-appearance-dark { --panel: #111827; --panel-2: #1f2937; --text: #f9fafb; --muted: #d1d5db; --border: #374151; --border-soft: #4b5563; background: #111827; }
 .pane-appearance-sepia { --panel: #f4ecd8; --panel-2: #e8dcc0; --text: #2b2118; --muted: #5c4a32; --border: #cdbb98; --border-soft: #dfd0b4; background: #f4ecd8; }
 .pane-appearance-contrast { --panel: #000; --panel-2: #111; --text: #fff; --muted: #ff0; --border: #ff0; --border-soft: #ff0; background: #000; }
+
+/* Contraste garantizado en submenús, selects y etiquetas para todos los temas */
+html:is([data-theme="white"],[data-theme="warm"],[data-theme="terracotta"],[data-theme="nordic"],[data-theme="cypress"],[data-theme="oxford"],[data-theme="obsidian"],[data-theme="blue"],[data-theme="gray"],[data-theme="green"]) :is(
+  .custom-select-menu,
+  .format-popover,
+  .theme-menu,
+  .interlinear-menu,
+  .mod-tab-menu,
+  .book-view-popover,
+  .paper-popover,
+  .reader-width-menu
+) {
+  background: var(--bg-elevated, var(--bg-card)) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-strong, var(--border)) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+html:is([data-theme="white"],[data-theme="warm"],[data-theme="terracotta"],[data-theme="nordic"],[data-theme="cypress"],[data-theme="oxford"],[data-theme="obsidian"],[data-theme="blue"],[data-theme="gray"],[data-theme="green"]) :is(
+  .custom-select-option,
+  .theme-menu button,
+  .format-option,
+  .mod-tab-menu button,
+  .book-view-popover button,
+  .paper-popover button,
+  .reader-width-menu button
+) {
+  color: var(--text-primary) !important;
+  background: transparent !important;
+}
+
+html:is([data-theme="white"],[data-theme="warm"],[data-theme="terracotta"],[data-theme="nordic"],[data-theme="cypress"],[data-theme="oxford"],[data-theme="obsidian"],[data-theme="blue"],[data-theme="gray"],[data-theme="green"]) :is(
+  .custom-select-option:hover,
+  .custom-select-option.active,
+  .theme-menu button:hover,
+  .theme-menu button.active,
+  .format-option:hover,
+  .mod-tab-menu button:hover,
+  .book-view-popover button:hover,
+  .paper-popover button:hover,
+  .reader-width-menu button:hover,
+  .reader-width-menu button.active
+) {
+  color: var(--accent) !important;
+  background: var(--accent-soft, rgba(56,189,248,.12)) !important;
+}
+
+html:is([data-theme="white"],[data-theme="warm"],[data-theme="terracotta"],[data-theme="nordic"],[data-theme="cypress"],[data-theme="oxford"],[data-theme="obsidian"],[data-theme="blue"],[data-theme="gray"],[data-theme="green"]) .custom-select-chevron {
+  color: var(--text-secondary) !important;
+}
+
+html:is([data-theme="white"],[data-theme="warm"],[data-theme="terracotta"],[data-theme="nordic"],[data-theme="cypress"],[data-theme="oxford"],[data-theme="obsidian"],[data-theme="blue"],[data-theme="gray"],[data-theme="green"]) select option {
+  background: var(--bg-card) !important;
+  color: var(--text-primary) !important;
+}
+
+html:is([data-theme="white"],[data-theme="warm"],[data-theme="terracotta"],[data-theme="nordic"],[data-theme="cypress"]) .brand-compact span {
+  color: var(--text-primary) !important;
+}
