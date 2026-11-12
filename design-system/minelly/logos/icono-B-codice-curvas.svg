@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <title>icono-B-codice.svg</title>
+  <g id="Layer_1" data-name="Layer 1">
+    <path d="M232 0 L792 0 C920.13 0 1024 103.87 1024 232 L1024 792 C1024 920.13 920.13 1024 792 1024 L232 1024 C103.87 1024 0 920.13 0 792 L0 232 C0 103.87 103.87 0 232 0 Z" fill="#0a2038"/>
+    <path d="M268 704 L268 416 L500 352 L500 640 Z" fill="#f6f1e7"/>
+    <path d="M756 704 L756 416 L524 352 L524 640 Z" fill="#f6f1e7"/>
+    <path d="M492 352 L532 352 L532 486 L512 462 L492 486 Z" fill="#b87333"/>
+  </g>
+</svg>

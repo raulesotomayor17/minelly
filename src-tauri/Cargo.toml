@@ -1,0 +1,82 @@
+[package]
+name = "teoamoxtli"
+version = "0.1.0"
+description = "Teoamoxtli: estudio bíblico local y multiplataforma"
+authors = ["Teoamoxtli"]
+edition = "2024"
+default-run = "teoamoxtli"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+# The `_lib` suffix may seem redundant but it is necessary
+# to make the lib name unique and wouldn't conflict with the bin name.
+# This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
+name = "teoamoxtli_lib"
+# Desktop-only build: the MinGW linker rejects the export count of the
+# mobile cdylib artifact, and Tauri desktop only needs the rlib.
+crate-type = ["rlib"]
+
+[features]
+default = ["custom-protocol"]
+custom-protocol = ["tauri/custom-protocol"]
+# Las herramientas de src/bin son de desarrollo/diagnóstico, no binarios de
+# usuario: no deben instalarse en /usr/bin. Tauri las excluye del paquete
+# cuando la feature no está activa.
+# Uso: cargo run --features tools --bin import -- ...
+tools = []
+
+[[bin]]
+name = "import"
+path = "src/bin/import.rs"
+required-features = ["tools"]
+
+[[bin]]
+name = "interlinear_smoke"
+path = "src/bin/interlinear_smoke.rs"
+required-features = ["tools"]
+
+[[bin]]
+name = "pbb_smoke"
+path = "src/bin/pbb_smoke.rs"
+required-features = ["tools"]
+
+[[bin]]
+name = "global_index"
+path = "src/bin/global_index.rs"
+required-features = ["tools"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-opener = "2"
+tauri-plugin-dialog = "2"
+tauri-plugin-clipboard-manager = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+anyhow = "1"
+thiserror = "2"
+rusqlite = { version = "0.41", features = ["bundled"] }
+ammonia = "4.2"
+regex = "1"
+walkdir = "2"
+zip = "9.5"
+flate2 = "1"
+image = { version = "0.25", default-features = false, features = ["jpeg", "png"] }
+roxmltree = "0.21"
+percent-encoding = "2"
+uuid = { version = "1", features = ["v4"] }
+base64 = "0.22"
+rust-stemmers = "1.2"
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+
+
+# Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = 3
+panic = "abort"
+strip = true

@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "feature_name": "global_resource_indexer_fts5",
+  "description": "Motor de indexación global de texto completo (FTS5) para unificar las búsquedas en Biblias, Comentarios, Diccionarios y Libros Personales importados.",
+  "database_schema": {
+    "table_global_search_index": {
+      "type": "virtual_table",
+      "engine": "FTS5",
+      "columns": {
+        "resource_id": "UNINDEXED (FK a la tabla resources)",
+        "module_type": "UNINDEXED (bible, commentary, dictionary, book)",
+        "reference_key": "UNINDEXED (ej. JHN:1:1 o dict_strong_g2316)",
+        "content_text": "El texto puro, limpio de etiquetas HTML/XML, tokenizado con unicode61"
+      },
+      "options": "tokenize = 'unicode61 remove_diacritics 1'"
+    }
+  },
+  "pipeline_importacion": {
+    "trigger": "Al finalizar la importación de un archivo .bblx, .mybible o .epub",
+    "steps": [
+      "1. Leer registros crudos de la base de datos origen.",
+      "2. Pasar el contenido por un HTML stripper para extraer solo el innerText.",
+      "3. Insertar masivamente (BATCH INSERT) en global_search_index.",
+      "4. Actualizar estado del recurso a 'indexed = true' en la tabla resources."
+    ]
+  },
+  "query_engine": {
+    "fts_match": "SELECT resource_id, reference_key, snippet(global_search_index, 3, '<b>', '</b>', '...', 64) as fragment FROM global_search_index WHERE content_text MATCH ? ORDER BY rank LIMIT 50;",
+    "ranking": "Usa la función bm25() por defecto de FTS5 para ordenar por relevancia."
+  }
+}

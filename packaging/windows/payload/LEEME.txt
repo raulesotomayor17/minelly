@@ -1,0 +1,16 @@
+Teoamoxtli 0.1.0 — Windows 11 x64
+
+Instalador: Teoamoxtli-0.1.0-windows-x64-setup.exe
+  Instala por usuario en %LOCALAPPDATA%\Teoamoxtli.
+  No requiere permisos de administrador.
+
+Portable: descomprime el ZIP y ejecuta teoamoxtli.exe manteniendo resources/
+junto al ejecutable.
+
+Si Windows SmartScreen muestra una advertencia por ser un paquete sin firma:
+  Más información → Ejecutar de todas formas.
+
+Windows 11 incluye WebView2. Si el instalador detecta que falta, descarga el
+runtime oficial de Microsoft.
+
+Los datos se guardan en %APPDATA%\com.teoamoxtli.desktop.

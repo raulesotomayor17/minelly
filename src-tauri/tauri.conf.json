@@ -1,0 +1,54 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Minelly Estudio B\u00edblico",
+  "version": "0.1.0",
+  "identifier": "com.teoamoxtli.desktop",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Minelly \u00b7 Estudio B\u00edblico",
+        "width": 1280,
+        "height": 820,
+        "minWidth": 1000,
+        "minHeight": 620,
+        "resizable": true,
+        "x": 10,
+        "y": 10,
+        "center": false,
+        "maximized": false,
+        "theme": "Dark"
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "resources": [
+      "resources/wordstudy.sqlite.gz",
+      "resources/interlinear_factory.sqlite.gz"
+    ],
+    "linux": {
+      "rpm": {
+        "depends": [
+          "espeak-ng"
+        ]
+      }
+    }
+  }
+}
