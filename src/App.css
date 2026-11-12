@@ -16442,3 +16442,11 @@ html:is([data-theme="white"],[data-theme="warm"],[data-theme="terracotta"],[data
 .learnharness-graph-list article { padding: 10px; border: 1px solid var(--border); border-radius: 7px; background: var(--bg-card); }
 .learnharness-graph-list article p { color: var(--text-secondary); }
 .learnharness-graph-list article div span { display: inline-block; margin: 2px 4px 2px 0; padding: 2px 5px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-size: 10px; }
+
+/* La barra contraída muestra solo el monograma, sin nombre vertical. */
+.brand > .brand-compact,
+.sidebar-collapsed .brand > .brand-compact,
+.sidebar-collapsed.sidebar-pos-top .brand > .brand-compact,
+.sidebar-collapsed.sidebar-pos-bottom .brand > .brand-compact {
+  display: none !important;
+}
