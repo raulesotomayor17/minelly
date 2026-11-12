@@ -168,7 +168,7 @@ pub fn read_docx(path: &Path) -> Result<DocxDocument> {
                 if paragraph.text.trim().is_empty() {
                     issues.push(DocxIssue {
                         code: "EMPTY_HEADING".to_string(),
-                        severity: "error".to_string(),
+                        severity: "warning".to_string(),
                         message: "Hay un encabezado de artículo sin texto.".to_string(),
                     });
                 }

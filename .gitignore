@@ -34,3 +34,6 @@ capturas/
 *.rpm
 *.exe
 *.zip
+
+# Biblioteca descargada localmente
+Recursos para biblioteca/
