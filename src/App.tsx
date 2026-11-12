@@ -154,6 +154,7 @@ function loadLastLocation(): Partial<LastLocation> {
 
 function plainTextFromHtml(html: string): string {
   const document = new DOMParser().parseFromString(html, "text/html");
+
   return (document.body.textContent ?? "").replace(/\s+/g, " ").trim();
 }
 
@@ -602,6 +603,9 @@ function App() {
     return stored === "en" ? "en" : "es";
   });
   const [showSettings, setShowSettings] = useState(false);
+  const [assistantProvider, setAssistantProvider] = useState("deepseek");
+  const [assistantApiKey, setAssistantApiKey] = useState("");
+  const [assistantModel, setAssistantModel] = useState("deepseek-chat");
   const [citationInfoTarget, setCitationInfoTarget] = useState<Resource | null>(null);
   const [readingRibbon, setReadingRibbon] = useState<{
     id: string; resourceId: string; spine: number; label: string; createdAt: number;
@@ -3354,6 +3358,39 @@ function App() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [view]);
 
+  useEffect(() => {
+    if (!showSettings) return;
+    try {
+      const raw = localStorage.getItem("teoamoxtli.assistant.config.v2");
+      if (!raw) return;
+      const config = JSON.parse(raw);
+      const provider = config.provider ?? "deepseek";
+      setAssistantProvider(provider);
+      setAssistantApiKey(config.apiKeyByProvider?.[provider] ?? "");
+      setAssistantModel(config.modelByProvider?.[provider] ?? "");
+    } catch {
+      // configuración nueva
+    }
+  }, [showSettings]);
+
+  function saveAssistantApi() {
+    try {
+      const raw = localStorage.getItem("teoamoxtli.assistant.config.v2");
+      const config = raw ? JSON.parse(raw) : {
+        provider: "deepseek", persona: "harvard-exegesis",
+        baseUrlByProvider: {}, modelByProvider: {}, apiKeyByProvider: {},
+        rememberKeys: true, maxContextItems: 10, temperature: 0.25, textScale: 1,
+      };
+      config.provider = assistantProvider;
+      config.apiKeyByProvider = { ...(config.apiKeyByProvider ?? {}), [assistantProvider]: assistantApiKey };
+      config.modelByProvider = { ...(config.modelByProvider ?? {}), [assistantProvider]: assistantModel };
+      localStorage.setItem("teoamoxtli.assistant.config.v2", JSON.stringify(config));
+      setStatus("Configuración del proveedor de IA guardada.");
+    } catch (error) {
+      setStatus(String(error));
+    }
+  }
+
   const appShellClass = [
     "app-shell",
     `sidebar-pos-${sidebarSettings.position}`,
@@ -3513,7 +3550,7 @@ function App() {
             onClick={() => setShowHome(true)}
           >
             <Icon name="home" />
-            <span>{tr("Panel de control", "Dashboard")}</span>
+            <span>{tr("Inicio", "Home")}</span>
           </button>
           <button
             className={view === "library" ? "nav-item active" : "nav-item"}
@@ -7192,6 +7229,7 @@ function App() {
           </div>
         )}
 
+
         {citationInfoTarget && (
           <CitationInfoModal
             resource={citationInfoTarget}
@@ -7269,6 +7307,36 @@ function App() {
                 onChange={(event) => uiCustomization.update({ includeTranslationEntry: event.target.checked })}
               />
             </label>
+            <div className="settings-field settings-api-field">
+              <span>{tr("Proveedor de IA del Asistente", "Assistant AI provider")}</span>
+              <select value={assistantProvider} onChange={(event) => setAssistantProvider(event.target.value)}>
+                <option value="deepseek">DeepSeek</option>
+                <option value="gemini">Google Gemini</option>
+                <option value="openai-compatible">OpenAI / Ollama / compatible</option>
+                <option value="harvard-local">Motor local (sin API)</option>
+              </select>
+            </div>
+            {assistantProvider !== "harvard-local" && (
+              <>
+                <label className="settings-field settings-api-field">
+                  <span>{tr("API Key", "API Key")}</span>
+                  <input
+                    type="password"
+                    value={assistantApiKey}
+                    onChange={(event) => setAssistantApiKey(event.target.value)}
+                    placeholder="sk-…"
+                  />
+                </label>
+                <label className="settings-field settings-api-field">
+                  <span>{tr("Modelo", "Model")}</span>
+                  <input value={assistantModel} onChange={(event) => setAssistantModel(event.target.value)} placeholder="deepseek-chat" />
+                </label>
+                <button type="button" className="secondary-button settings-api-save" onClick={saveAssistantApi}>
+                  {tr("Guardar API del Asistente", "Save Assistant API")}
+                </button>
+              </>
+            )}
+
             <details className="settings-credits">
               <summary>Créditos y fuentes de datos</summary>
               <p><strong>Texto hebreo (AT):</strong> Biblia Hebraica Stuttgartensia (BHS) / ETCBC & STEPBible TAHOT (Tyndale House, Cambridge) — CC BY 4.0.</p>
