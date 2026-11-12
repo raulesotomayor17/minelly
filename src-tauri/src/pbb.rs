@@ -253,6 +253,7 @@ pub fn build(
                 }
             };
 
+            let epub_path = crate::autosanear::clean_if_available(&epub_path).unwrap_or(epub_path);
             match read_epub_package(&epub_path) {
                 Ok(parsed) => {
                     for warning in parsed.warnings {
@@ -320,6 +321,7 @@ pub fn build(
             continue;
         };
 
+        let docx_path = crate::autosanear::clean_if_available(&docx_path).unwrap_or(docx_path);
         match read_docx(&docx_path) {
             Ok(document) => {
                 if cover_fallback.is_none() {
