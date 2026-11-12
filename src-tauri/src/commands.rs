@@ -626,6 +626,27 @@ pub fn repair_book_typesetting(state: State<'_, AppState>, resource_id: String) 
 }
 
 #[tauri::command]
+pub fn book_split_chapter_at(
+    state: State<'_, AppState>, resource_id: String, spine: i64,
+    before_html: String, after_html: String, new_chapter_title: String,
+) -> Result<Vec<crate::model::EpubChapterSummary>, String> {
+    let mut catalog = state.catalog.lock().map_err(message)?;
+    catalog.split_epub_chapter(&resource_id, spine, &before_html, &after_html, &new_chapter_title).map_err(message)
+}
+
+#[tauri::command]
+pub fn book_merge_chapter_with_previous(state: State<'_, AppState>, resource_id: String, spine: i64) -> Result<Vec<crate::model::EpubChapterSummary>, String> {
+    let mut catalog = state.catalog.lock().map_err(message)?;
+    catalog.merge_epub_chapter_with_previous(&resource_id, spine).map_err(message)
+}
+
+#[tauri::command]
+pub fn book_rename_chapter(state: State<'_, AppState>, resource_id: String, spine: i64, new_title: String) -> Result<(), String> {
+    let mut catalog = state.catalog.lock().map_err(message)?;
+    catalog.rename_epub_chapter(&resource_id, spine, &new_title).map_err(message)
+}
+
+#[tauri::command]
 pub fn reconstruct_book_structure(state: State<'_, AppState>, resource_id: String) -> Result<crate::model::Resource, String> {
     let mut catalog = state.catalog.lock().map_err(message)?;
     let rows = {

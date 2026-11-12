@@ -670,4 +670,10 @@ export const EN_TRANSLATIONS: Record<string, string> = {
   "Guardar API del Asistente": "Save Assistant API",
   "Configurar API / Proveedor": "Configure API / Provider",
 
+  "Jerarquía e Índice": "Hierarchy and Index",
+  "Modo Maquetación": "Layout Mode",
+  "Ordenar índice y capítulos": "Sort index and chapters",
+  "Renombrar capítulo": "Rename chapter",
+  "Unir con el capítulo anterior": "Merge with previous chapter",
+
 };

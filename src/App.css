@@ -16463,3 +16463,13 @@ html:is([data-theme="white"],[data-theme="warm"],[data-theme="terracotta"],[data
 .book-full-surface { display: grid; gap: 34px; }
 .book-full-chapter { padding-bottom: 26px; border-bottom: 1px solid var(--border-subtle); }
 .book-full-chapter > h1 { margin: 0 0 14px; font-family: var(--serif); font-size: 1.5em; color: var(--text-primary); }
+
+.context-menu-subhead { padding: 7px 9px 3px; color: var(--faint); font-size: 9px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.book-curation-toolbar { position: fixed; z-index: 1800; display: flex; gap: 2px; transform: translate(-100%, 0); padding: 3px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-elevated, var(--bg-card)); box-shadow: 0 6px 18px rgba(0,0,0,.3); }
+.book-curation-toolbar button { min-width: 25px; height: 23px; padding: 0 5px; border: 1px solid var(--border-soft); border-radius: 4px; background: var(--bg-input); color: var(--text-primary); font-size: 10px; cursor: pointer; }
+.book-curation-toolbar button:hover { border-color: var(--accent); color: var(--accent); }
+.toc-row { display: flex; align-items: center; gap: 3px; }
+.toc-row > .toc-item { flex: 1; }
+.toc-row-actions { display: flex; gap: 2px; opacity: 0; transition: opacity .12s; }
+.toc-row:hover .toc-row-actions, .toc-row:focus-within .toc-row-actions { opacity: 1; }
+.toc-row-actions button { padding: 2px 4px; border: 1px solid var(--border-soft); border-radius: 3px; background: var(--bg-input); color: var(--text-secondary); cursor: pointer; }

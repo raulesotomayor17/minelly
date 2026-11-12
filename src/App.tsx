@@ -686,6 +686,8 @@ function App() {
   const [bookStructureTick, setBookStructureTick] = useState(0);
   const [bookFullMode, setBookFullMode] = useState(false);
   const [bookFullChapters, setBookFullChapters] = useState<EpubChapter[]>([]);
+  const [bookCurationMode, setBookCurationMode] = useState(false);
+  const [bookHoveredBlock, setBookHoveredBlock] = useState<{ node: HTMLElement; x: number; y: number } | null>(null);
   const [bookSpine, setBookSpine] = useState(lastLocation.bookSpine ?? 0);
   const [bookChapter, setBookChapter] = useState<EpubChapter | null>(null);
   const [bookTocTab, setBookTocTab] = useState<"chapters" | "outline" | "refs" | "bookmarks">("chapters");
@@ -3015,6 +3017,26 @@ function App() {
     setBookProgress(Math.min(100, Math.max(0, next)));
   }
 
+  async function renameBookChapter(spine: number, currentTitle: string) {
+    const title = window.prompt("Nuevo título del capítulo", currentTitle);
+    if (!title || title.trim() === currentTitle) return;
+    try {
+      await invoke("book_rename_chapter", { resourceId: bookId, spine, newTitle: title.trim() });
+      setBookStructureTick((value) => value + 1);
+      setStatus("Capítulo renombrado.");
+    } catch (error) { setStatus(String(error)); }
+  }
+
+  async function mergeBookChapter(spine: number) {
+    if (spine <= 0) return;
+    try {
+      await invoke("book_merge_chapter_with_previous", { resourceId: bookId, spine });
+      setBookStructureTick((value) => value + 1);
+      setBookSpine(spine - 1);
+      setStatus("Capítulo unido con el anterior.");
+    } catch (error) { setStatus(String(error)); }
+  }
+
   async function reconstructBookStructure() {
     if (!bookId) return;
     try {
@@ -3330,6 +3352,52 @@ function App() {
     const unit = view === "book" ? bookSpine : chapter;
     await invoke("toggle_reading_unit_completed", { resourceId, spine: unit, completed: true });
     setStatus("Capítulo completado.");
+  }
+
+  async function persistBookChapterHtml(html: string) {
+    await invoke("update_book_chapter_html", { resourceId: bookId, spine: bookSpine, html });
+    setBookChapter((current) => current ? { ...current, html } : current);
+  }
+
+  async function applyBookBlockTag(tag: "h1" | "h2" | "h3" | "h4" | "p", target?: HTMLElement | null) {
+    const node = target ?? bookContextNodeRef.current;
+    const content = bookReaderRef.current?.querySelector<HTMLElement>(".epub-content");
+    if (!node || !content) return;
+    const replacement = document.createElement(tag);
+    if (tag !== "p") replacement.id = `sec-${Date.now()}`;
+    replacement.innerHTML = node.innerHTML;
+    node.replaceWith(replacement);
+    bookContextNodeRef.current = replacement;
+    setContextMenu(null);
+    try { await persistBookChapterHtml(content.innerHTML); setStatus(`Bloque convertido a ${tag.toUpperCase()}.`); }
+    catch (error) { setStatus(String(error)); }
+  }
+
+  async function splitBookChapterAt(target?: HTMLElement | null) {
+    const node = target ?? bookContextNodeRef.current;
+    const content = bookReaderRef.current?.querySelector<HTMLElement>(".epub-content");
+    if (!node || !content || !bookChapter) return;
+    const children = Array.from(content.children) as HTMLElement[];
+    const index = children.indexOf(node);
+    if (index < 0) return;
+    const beforeHtml = children.slice(0, index).map((el) => el.outerHTML).join("");
+    const afterHtml = children.slice(index).map((el) => el.outerHTML).join("");
+    const title = (node.textContent ?? "").trim().slice(0, 120) || `Capítulo ${bookSpine + 2}`;
+    try {
+      await invoke("book_split_chapter_at", { resourceId: bookId, spine: bookSpine, beforeHtml, afterHtml, newChapterTitle: title });
+      setBookStructureTick((value) => value + 1);
+      setBookSpine(bookSpine + 1);
+      setContextMenu(null);
+      setStatus("Capítulo dividido.");
+    } catch (error) { setStatus(String(error)); }
+  }
+
+  function handleBookBlockHover(event: ReactMouseEvent<HTMLElement>) {
+    if (!bookCurationMode) return;
+    const target = (event.target as HTMLElement).closest("p,h1,h2,h3,h4,blockquote,div");
+    if (!target || !target.closest(".book-typeset-surface")) return;
+    const rect = target.getBoundingClientRect();
+    setBookHoveredBlock({ node: target as HTMLElement, x: rect.right - 8, y: rect.top + 4 });
   }
 
   async function formatBookParagraph(mode: "quote" | "poetry" | "callout" | "normal") {
@@ -5715,16 +5783,16 @@ function App() {
               {bookTocTab === "chapters" && (
                 <div className="book-toc-list">
                   {bookChapters.map((chapterItem, index) => (
-                    <button
-                      key={chapterItem.spine}
-                      className={
-                        chapterItem.spine === bookSpine ? "toc-item active" : "toc-item"
-                      }
-                      onClick={() => setBookSpine(chapterItem.spine)}
-                    >
-                      <span>{index + 1}</span>
-                      <strong>{chapterItem.title}</strong>
-                    </button>
+                    <div key={chapterItem.spine} className={chapterItem.spine === bookSpine ? "toc-row active" : "toc-row"}>
+                      <button type="button" className="toc-item" onClick={() => setBookSpine(chapterItem.spine)}>
+                        <span>{index + 1}</span>
+                        <strong>{chapterItem.title}</strong>
+                      </button>
+                      <div className="toc-row-actions">
+                        <button type="button" title="Renombrar capítulo" onClick={() => void renameBookChapter(chapterItem.spine, chapterItem.title)}>✎</button>
+                        {chapterItem.spine > 0 && <button type="button" title="Unir con el capítulo anterior" onClick={() => void mergeBookChapter(chapterItem.spine)}>⇡</button>}
+                      </div>
+                    </div>
                   ))}
                   {bookChapters.length === 0 && (
                     <p className="empty-hint">Este libro no tiene capítulos legibles.</p>
@@ -5896,6 +5964,7 @@ function App() {
                   >
                     Libro completo
                   </button>
+                  <button type="button" className={`tool-button${bookCurationMode ? " active" : ""}`} onClick={() => setBookCurationMode((current) => !current)} title="Modo Maquetación: asigna H1–H4 y divide capítulos desde el texto">Maquetar</button>
                   <div className="book-view-wrap" ref={bookViewMenuRef}>
                     <button
                       type="button"
@@ -6213,6 +6282,8 @@ function App() {
                           .filter(Boolean)
                           .join(" ")}
                         onClick={handleScriptureLinkClick}
+                        onMouseOver={handleBookBlockHover}
+                        onMouseLeave={() => setBookHoveredBlock(null)}
                         dangerouslySetInnerHTML={{ __html: processedBookChapter.html }}
                       />
                       <div className="book-nav">
@@ -6767,6 +6838,16 @@ function App() {
           </div>
         )}
 
+        {bookCurationMode && bookHoveredBlock && (
+          <div className="book-curation-toolbar" style={{ left: bookHoveredBlock.x, top: bookHoveredBlock.y }}>
+            <button type="button" onClick={() => void splitBookChapterAt(bookHoveredBlock.node)}>✂ Cap.</button>
+            {(["h1", "h2", "h3", "h4"] as const).map((tag) => (
+              <button type="button" key={tag} onClick={() => void applyBookBlockTag(tag, bookHoveredBlock.node)}>{tag.toUpperCase()}</button>
+            ))}
+            <button type="button" onClick={() => void applyBookBlockTag("p", bookHoveredBlock.node)}>¶</button>
+          </div>
+        )}
+
         {contextMenu && !showNotes && (
           <div
             className="context-menu"
@@ -6825,6 +6906,13 @@ function App() {
             </button>
             {view === "book" && (
               <>
+                <div className="context-menu-subhead">Jerarquía e Índice</div>
+                <button onClick={() => void splitBookChapterAt()}>✂️ Dividir aquí como Nuevo Capítulo</button>
+                <button onClick={() => void applyBookBlockTag("h1")}>H1 — Título dentro del capítulo</button>
+                <button onClick={() => void applyBookBlockTag("h2")}>H2 — Sección principal</button>
+                <button onClick={() => void applyBookBlockTag("h3")}>H3 — Subsección</button>
+                <button onClick={() => void applyBookBlockTag("h4")}>H4 — Apartado menor</button>
+                <button onClick={() => void applyBookBlockTag("p")}>¶ Convertir en párrafo normal</button>
                 <button onClick={() => void formatBookParagraph("quote")}>❝ Convertir en cita con sangría</button>
                 <button onClick={() => void formatBookParagraph("poetry")}>📜 Formatear como poesía / verso</button>
                 <button onClick={() => void formatBookParagraph("callout")}>📌 Destacar como recuadro</button>
