@@ -115,6 +115,8 @@ export interface PaneState {
   compareIds?: string[];
   showDiff?: boolean;
   searchQuery?: string;
+  fontScale?: number;
+  appearance?: "inherit" | "light" | "dark" | "sepia" | "contrast";
 }
 
 interface PaneTab {
@@ -1212,7 +1214,10 @@ export function PaneView({
   }
 
   return (
-    <div className="mod-pane">
+    <div
+      className={`mod-pane pane-appearance-${pane.state.appearance ?? "inherit"}`}
+      style={{ "--pane-scale": pane.state.fontScale ?? 1 } as CSSProperties}
+    >
       <div className="mod-pane-tabs">
         <button
           type="button"
@@ -1306,6 +1311,34 @@ export function PaneView({
             </option>
           ))}
         </select>
+        <div className="mod-pane-display" role="group" aria-label="Visualización del panel">
+          <button
+            type="button"
+            onClick={() => onPaneState(pane.id, { fontScale: Math.max(0.75, (pane.state.fontScale ?? 1) - 0.1) })}
+            title="Reducir letra del panel"
+          >
+            A−
+          </button>
+          <button
+            type="button"
+            onClick={() => onPaneState(pane.id, { fontScale: Math.min(1.8, (pane.state.fontScale ?? 1) + 0.1) })}
+            title="Aumentar letra del panel"
+          >
+            A+
+          </button>
+          <select
+            value={pane.state.appearance ?? "inherit"}
+            onChange={(event) => onPaneState(pane.id, { appearance: event.target.value as PaneState["appearance"] })}
+            aria-label="Aspecto del panel"
+            title="Aspecto visual del panel"
+          >
+            <option value="inherit">Tema</option>
+            <option value="light">Claro</option>
+            <option value="sepia">Sepia</option>
+            <option value="dark">Oscuro</option>
+            <option value="contrast">Contraste</option>
+          </select>
+        </div>
         {resourceOptions.length > 0 ? (
           <select
             className="mod-resource-select"
@@ -1588,7 +1621,8 @@ export function PaneView({
             "--reader-font": `"${readerFont}", Georgia, serif`,
             "--reader-font-size": `${16.5 * readerScale}px`,
             "--study-font": `"${studyFont}", Georgia, serif`,
-            "--study-font-size": `${13 * studyScale * paneScale}px`,
+            "--study-font-size": `${13 * studyScale * (pane.state.fontScale ?? paneScale)}px`,
+            zoom: "var(--pane-scale)",
           } as CSSProperties
         }
       >

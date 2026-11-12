@@ -16323,3 +16323,13 @@ html:is([data-theme="oxford"],[data-theme="obsidian"],[data-theme="blue"],[data-
 html:is([data-theme="white"],[data-theme="warm"],[data-theme="terracotta"],[data-theme="nordic"],[data-theme="cypress"]) .brand-mark {
   filter: contrast(1.12) saturate(1.08) drop-shadow(0 1px 1px rgba(15, 23, 42, 0.28)) !important;
 }
+
+/* Controles de visualización por panel del Lienzo */
+.mod-pane-display { display: inline-flex; align-items: center; gap: 2px; margin-left: auto; }
+.mod-pane-display button { min-width: 25px; height: 25px; padding: 0 5px; border: 1px solid var(--border-soft); border-radius: 4px; background: var(--bg-input, var(--panel-2)); color: var(--text-primary, var(--text)); font-size: 11px; cursor: pointer; }
+.mod-pane-display select { height: 25px; padding: 0 4px; border: 1px solid var(--border-soft); border-radius: 4px; background: var(--bg-input, var(--panel-2)); color: var(--text-primary, var(--text)); font-size: 11px; }
+.mod-pane.pane-appearance-light { --panel: #ffffff; --panel-2: #f3f4f6; --text: #111827; --muted: #374151; --border: #d1d5db; --border-soft: #e5e7eb; background: #ffffff; }
+.mod-pane.pane-appearance-dark { --panel: #111827; --panel-2: #1f2937; --text: #f9fafb; --muted: #d1d5db; --border: #374151; --border-soft: #4b5563; background: #111827; }
+.mod-pane.pane-appearance-sepia { --panel: #f4ecd8; --panel-2: #e8dcc0; --text: #2b2118; --muted: #5c4a32; --border: #cdbb98; --border-soft: #dfd0b4; background: #f4ecd8; }
+.mod-pane.pane-appearance-contrast { --panel: #000000; --panel-2: #111111; --text: #ffffff; --muted: #ffff00; --border: #ffff00; --border-soft: #ffff00; background: #000000; }
+.mod-pane.pane-appearance-light .mod-pane-body, .mod-pane.pane-appearance-dark .mod-pane-body, .mod-pane.pane-appearance-sepia .mod-pane-body, .mod-pane.pane-appearance-contrast .mod-pane-body { background: var(--panel); color: var(--text); }
