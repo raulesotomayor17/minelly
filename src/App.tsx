@@ -683,6 +683,9 @@ function App() {
   const [topic, setTopic] = useState("");
   const [dictionaryEntry, setDictionaryEntry] = useState<DictionaryEntry | null>(null);
   const [bookChapters, setBookChapters] = useState<EpubChapterSummary[]>([]);
+  const [bookStructureTick, setBookStructureTick] = useState(0);
+  const [bookFullMode, setBookFullMode] = useState(false);
+  const [bookFullChapters, setBookFullChapters] = useState<EpubChapter[]>([]);
   const [bookSpine, setBookSpine] = useState(lastLocation.bookSpine ?? 0);
   const [bookChapter, setBookChapter] = useState<EpubChapter | null>(null);
   const [bookTocTab, setBookTocTab] = useState<"chapters" | "outline" | "refs" | "bookmarks">("chapters");
@@ -1382,7 +1385,21 @@ function App() {
         );
       })
       .catch((error) => setStatus(String(error)));
-  }, [bookId, view]);
+  }, [bookId, view, bookStructureTick]);
+
+  useEffect(() => {
+    if (!bookFullMode || !bookId || bookChapters.length === 0) {
+      setBookFullChapters([]);
+      return;
+    }
+    Promise.all(
+      bookChapters.map((chapter) =>
+        invoke<EpubChapter | null>("get_epub_chapter", { resourceId: bookId, spine: chapter.spine }),
+      ),
+    )
+      .then((items) => setBookFullChapters(items.filter((item): item is EpubChapter => Boolean(item))))
+      .catch((error) => setStatus(String(error)));
+  }, [bookFullMode, bookId, bookChapters]);
 
   useEffect(() => {
     if (!bookId) {
@@ -2996,6 +3013,17 @@ function App() {
     const max = element.scrollHeight - element.clientHeight;
     const next = max > 4 ? (element.scrollTop / max) * 100 : 100;
     setBookProgress(Math.min(100, Math.max(0, next)));
+  }
+
+  async function reconstructBookStructure() {
+    if (!bookId) return;
+    try {
+      await invoke("reconstruct_book_structure", { resourceId: bookId });
+      setBookStructureTick((value) => value + 1);
+      setStatus("Índice y capítulos reconstruidos.");
+    } catch (error) {
+      setStatus(String(error));
+    }
   }
 
   function cycleBookColumns() {
@@ -5584,6 +5612,7 @@ function App() {
                     <small>
                       {bookChapters.length} capítulos · {processedBookChapter.outline.length} secciones
                     </small>
+                    <button type="button" className="book-toc-reconstruct" onClick={() => void reconstructBookStructure()}>Ordenar índice y capítulos</button>
                   </div>
                 )}
                 <button
@@ -5859,6 +5888,14 @@ function App() {
                     {bookTypesetting.columns} Col
                   </button>
 
+                  <button
+                    type="button"
+                    className={`tool-button${bookFullMode ? " active" : ""}`}
+                    onClick={() => setBookFullMode((current) => !current)}
+                    title="Leer todos los capítulos seguidos"
+                  >
+                    Libro completo
+                  </button>
                   <div className="book-view-wrap" ref={bookViewMenuRef}>
                     <button
                       type="button"
@@ -5880,6 +5917,7 @@ function App() {
                           <strong>Vista de lectura</strong>
                           <span>Se guarda automáticamente</span>
                         </div>
+                        <button type="button" className="secondary-button book-view-reconstruct" onClick={() => void reconstructBookStructure()}>Ordenar índice y capítulos</button>
 
                         <div className="book-view-section">
                           <span className="book-view-label">Columnas</span>
@@ -6103,6 +6141,20 @@ function App() {
               <div className="reader-canvas-stage">
                 <div className="reader-canvas-sheet">
                   {bookChapter ? (
+                    bookFullMode ? (
+                      <div className="book-full-surface">
+                        {bookFullChapters.map((chapter) => (
+                          <section key={chapter.spine} className="book-full-chapter" data-spine={chapter.spine}>
+                            <h1>{chapter.title}</h1>
+                            <div
+                              className="book-typeset-surface"
+                              onClick={handleScriptureLinkClick}
+                              dangerouslySetInnerHTML={{ __html: chapter.html }}
+                            />
+                          </section>
+                        ))}
+                      </div>
+                    ) : (
                     <>
                       <div className="reader-heading book-heading">
                         <div className="book-heading-meta">
@@ -6196,6 +6248,7 @@ function App() {
                         </button>
                       </div>
                     </>
+                    )
                   ) : (
                     <p className="empty-hint">Cargando libro…</p>
                   )}

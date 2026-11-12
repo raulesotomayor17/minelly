@@ -626,6 +626,34 @@ pub fn repair_book_typesetting(state: State<'_, AppState>, resource_id: String) 
 }
 
 #[tauri::command]
+pub fn reconstruct_book_structure(state: State<'_, AppState>, resource_id: String) -> Result<crate::model::Resource, String> {
+    let mut catalog = state.catalog.lock().map_err(message)?;
+    let rows = {
+        let conn = catalog.connection();
+        let mut stmt = conn.prepare("SELECT spine,title,href,html FROM epub_chapters WHERE resource_id=?1 ORDER BY spine").map_err(message)?;
+        let rows = stmt.query_map([&resource_id], |row| Ok((row.get::<_, i64>(0)?, row.get::<_, String>(1)?, row.get::<_, String>(2)?, row.get::<_, String>(3)?))).map_err(message)?;
+        rows.collect::<rusqlite::Result<Vec<_>>>().map_err(message)?
+    };
+    let raw = rows.into_iter().map(|(_, title, _, html)| crate::editorial::RawChapter { title, html }).collect();
+    let structured = crate::editorial::reconstruct_book_chapters_and_toc(raw);
+    let chapters = structured.into_iter().map(|chapter| crate::model::EpubChapter {
+        spine: chapter.spine, title: chapter.title,
+        href: chapter.href.replace("pbb://", &format!("pbb://{resource_id}/")),
+        html: crate::editorial::normalize_editorial_html(&chapter.html),
+    }).collect::<Vec<_>>();
+    catalog.replace_epub_chapters(&resource_id, &chapters).map_err(message)?;
+    catalog.replace_pbb_fts(&resource_id, &chapters).map_err(message)?;
+    catalog.connection().execute("DELETE FROM global_search_index WHERE resource_id=?1", [&resource_id]).map_err(message)?;
+    for chapter in &chapters {
+        let text = regex::Regex::new(r"<[^>]+>").unwrap().replace_all(&chapter.html, " ").split_whitespace().collect::<Vec<_>>().join(" ");
+        catalog.connection().execute("INSERT INTO global_search_index(resource_id,module_type,reference_key,content_text) VALUES(?1,'book',?2,?3)",
+            rusqlite::params![resource_id, chapter.title, text]).map_err(message)?;
+    }
+    catalog.connection().execute("UPDATE resources SET entry_count=?1 WHERE id=?2", rusqlite::params![chapters.len() as i64, resource_id]).map_err(message)?;
+    catalog.get_resource(&resource_id).map_err(message)?.ok_or_else(|| "No se encontró el libro.".to_string())
+}
+
+#[tauri::command]
 pub fn learning_session_list(state: State<'_, AppState>) -> Result<Vec<crate::learning::LearningSession>, String> {
     let catalog = state.catalog.lock().map_err(message)?;
     crate::learning::session_list(catalog.connection()).map_err(message)

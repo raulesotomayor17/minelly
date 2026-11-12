@@ -20,6 +20,7 @@ struct CompiledArticle {
 }
 
 const RESOURCE_TYPES: &[&str] = &[
+    "Bible",
     "Monograph",
     "Commentary",
     "Bible Harmony",
@@ -390,14 +391,21 @@ pub fn build(
         cover_fallback,
         &mut compiler,
     );
-    let chapters = articles
+    let raw_chapters = articles
         .iter()
-        .enumerate()
-        .map(|(index, article)| EpubChapter {
-            spine: index as i64,
+        .map(|article| crate::editorial::RawChapter {
             title: article.title.clone(),
-            href: format!("pbb://{resource_id}/{index}"),
             html: article.html.clone(),
+        })
+        .collect::<Vec<_>>();
+    let structured = crate::editorial::reconstruct_book_chapters_and_toc(raw_chapters);
+    let chapters = structured
+        .into_iter()
+        .map(|chapter| EpubChapter {
+            spine: chapter.spine,
+            title: chapter.title,
+            href: chapter.href.replace("pbb://", &format!("pbb://{resource_id}/")),
+            html: chapter.html,
         })
         .collect::<Vec<_>>();
 
