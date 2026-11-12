@@ -1,7 +1,7 @@
 {
   "name": "teoamoxtli",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Minelly: estudio b\u00edblico local y multiplataforma",
   "type": "module",
   "scripts": {
