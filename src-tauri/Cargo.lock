@@ -2406,6 +2406,34 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d5848f5a9e8117cf94f2f90faac24a87ff81600ff8628c1e3deaab572e76bfa1"
 
 [[package]]
+name = "minelly"
+version = "0.2.0"
+dependencies = [
+ "ammonia",
+ "anyhow",
+ "base64 0.22.1",
+ "flate2",
+ "image",
+ "percent-encoding",
+ "regex",
+ "reqwest 0.12.28",
+ "roxmltree",
+ "rusqlite",
+ "rust-stemmers",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-clipboard-manager",
+ "tauri-plugin-dialog",
+ "tauri-plugin-opener",
+ "thiserror 2.0.21",
+ "uuid",
+ "walkdir",
+ "zip",
+]
+
+[[package]]
 name = "miniz_oxide"
 version = "0.8.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4520,34 +4548,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5fed54709c5b3a53d09bb1c113ea4f5ceafd1e772ddcb0030a82e1d56c087b08"
 dependencies = [
  "new_debug_unreachable",
-]
-
-[[package]]
-name = "teoamoxtli"
-version = "0.2.0"
-dependencies = [
- "ammonia",
- "anyhow",
- "base64 0.22.1",
- "flate2",
- "image",
- "percent-encoding",
- "regex",
- "reqwest 0.12.28",
- "roxmltree",
- "rusqlite",
- "rust-stemmers",
- "serde",
- "serde_json",
- "tauri",
- "tauri-build",
- "tauri-plugin-clipboard-manager",
- "tauri-plugin-dialog",
- "tauri-plugin-opener",
- "thiserror 2.0.21",
- "uuid",
- "walkdir",
- "zip",
 ]
 
 [[package]]
