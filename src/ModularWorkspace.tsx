@@ -12,6 +12,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { readText, writeText } from "@tauri-apps/plugin-clipboard-manager";
 import { bibleAnchor, osisForBook } from "./anchors";
 import { PaperModePicker } from "./CustomizationModal";
+import EreaderWorkspace from "./EreaderWorkspace";
 import { processBookChapterHtml } from "./bookProcessor";
 import InterlinearVerse, { type InterlinearVerseData } from "./InterlinearVerse";
 
@@ -23,7 +24,8 @@ export type PaneType =
   | "dictionary"
   | "book"
   | "notes"
-  | "search";
+  | "search"
+  | "ereader";
 type LinkSet = "A" | "B" | "C" | "D" | "E" | "F" | "none";
 type SplitDirection = "horizontal" | "vertical";
 
@@ -209,6 +211,7 @@ const TYPE_LABEL: Record<PaneType, string> = {
   book: "Libro",
   notes: "Notas",
   search: "Buscador",
+  ereader: "eReader",
 };
 
 function nextId() {
@@ -826,7 +829,8 @@ export function PaneView({
     if (
       pane.resourceType === "interlinear" ||
       pane.resourceType === "notes" ||
-      pane.resourceType === "search"
+      pane.resourceType === "search" ||
+      pane.resourceType === "ereader"
     ) {
       return [];
     }
@@ -1634,6 +1638,10 @@ export function PaneView({
             resources={resourceOptions}
             onSelect={(resourceId) => onResource(pane.id, resourceId)}
           />
+        )}
+
+        {!needsResourcePicker && pane.resourceType === "ereader" && (
+          <EreaderWorkspace embedded onClose={() => undefined} />
         )}
 
         {!needsResourcePicker && pane.resourceType === "bible" && (
