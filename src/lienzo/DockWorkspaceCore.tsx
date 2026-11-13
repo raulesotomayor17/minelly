@@ -219,7 +219,6 @@ export default function DockWorkspaceCore({
   readerScale,
   studyFont,
   studyScale,
-  onOpenModule,
   onExit,
 }: Props) {
   const hostRef = useRef<HTMLDivElement>(null);
@@ -259,6 +258,14 @@ export default function DockWorkspaceCore({
       ...(active ? { position: { referencePanel: active.id, direction: "within" } } : {}),
     });
     setPaletteOpen(false);
+  }
+
+  function addModule(type: "compare" | "ereader" | "assistant" | "notes" | "sermons") {
+    const api = apiRef.current;
+    if (!api) return;
+    const pane = makePane(type as any, resources, initialReference, "A", true);
+    api.addPanel({ id: pane.id, component: "pane", title: type === "ereader" ? "eReader" : type === "assistant" ? "Asistente" : type === "sermons" ? "Sermones" : type === "notes" ? "Notas" : "Comparador", params: { pane } });
+    setModuleMenuOpen(false);
   }
 
   useEffect(() => {
@@ -364,11 +371,11 @@ export default function DockWorkspaceCore({
             <button type="button" onClick={() => setModuleMenuOpen((current) => !current)}>Abrir módulo</button>
             {moduleMenuOpen && (
               <div className="modular-module-menu">
-                <button type="button" onClick={() => { setModuleMenuOpen(false); onOpenModule?.("compare"); }}>Comparador</button>
-                <button type="button" onClick={() => { setModuleMenuOpen(false); onOpenModule?.("ereader"); }}>eReader</button>
-                <button type="button" onClick={() => { setModuleMenuOpen(false); onOpenModule?.("assistant"); }}>Asistente</button>
-                <button type="button" onClick={() => { setModuleMenuOpen(false); onOpenModule?.("notes"); }}>Notas</button>
-                <button type="button" onClick={() => { setModuleMenuOpen(false); onOpenModule?.("sermons"); }}>Sermones</button>
+                <button type="button" onClick={() => addModule("compare")}>Comparador</button>
+                <button type="button" onClick={() => addModule("ereader")}>eReader</button>
+                <button type="button" onClick={() => addModule("assistant")}>Asistente</button>
+                <button type="button" onClick={() => addModule("notes")}>Notas</button>
+                <button type="button" onClick={() => addModule("sermons")}>Sermones</button>
               </div>
             )}
           </div>

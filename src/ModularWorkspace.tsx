@@ -13,6 +13,8 @@ import { readText, writeText } from "@tauri-apps/plugin-clipboard-manager";
 import { bibleAnchor, osisForBook } from "./anchors";
 import { PaperModePicker } from "./CustomizationModal";
 import EreaderWorkspace from "./EreaderWorkspace";
+import StudyAssistant from "./StudyAssistant";
+import SermonWorkspace from "./SermonWorkspace";
 import { processBookChapterHtml } from "./bookProcessor";
 import InterlinearVerse, { type InterlinearVerseData } from "./InterlinearVerse";
 
@@ -25,7 +27,9 @@ export type PaneType =
   | "book"
   | "notes"
   | "search"
-  | "ereader";
+  | "ereader"
+  | "assistant"
+  | "sermons";
 type LinkSet = "A" | "B" | "C" | "D" | "E" | "F" | "none";
 type SplitDirection = "horizontal" | "vertical";
 
@@ -213,6 +217,8 @@ const TYPE_LABEL: Record<PaneType, string> = {
   notes: "Notas",
   search: "Buscador",
   ereader: "eReader",
+  assistant: "Asistente",
+  sermons: "Sermones",
 };
 
 function nextId() {
@@ -831,7 +837,9 @@ export function PaneView({
       pane.resourceType === "interlinear" ||
       pane.resourceType === "notes" ||
       pane.resourceType === "search" ||
-      pane.resourceType === "ereader"
+      pane.resourceType === "ereader" ||
+      pane.resourceType === "assistant" ||
+      pane.resourceType === "sermons"
     ) {
       return [];
     }
@@ -1641,6 +1649,20 @@ export function PaneView({
           />
         )}
 
+        {!needsResourcePicker && pane.resourceType === "assistant" && (
+          <StudyAssistant embedded onClose={() => undefined} onOpenContext={() => undefined} />
+        )}
+
+        {!needsResourcePicker && pane.resourceType === "sermons" && (
+          <SermonWorkspace
+            books={books}
+            bibles={resources.filter((resource) => resource.kind === "bible").map((resource) => ({ id: resource.id, title: resource.title, abbreviation: resource.abbreviation }))}
+            activeBibleId={resources.find((resource) => resource.kind === "bible")?.id ?? ""}
+            onClose={() => undefined}
+            onOpenCustomization={() => undefined}
+          />
+        )}
+
         {!needsResourcePicker && pane.resourceType === "ereader" && (
           <EreaderWorkspace embedded resources={resources} onClose={() => undefined} />
         )}
@@ -2247,7 +2269,6 @@ export default function ModularWorkspace({
   readerScale,
   studyScale,
   onOpenCustomization,
-  onOpenModule,
   onExit,
 }: ModularWorkspaceProps) {
   const [tree, setTree] = useState<LayoutNode>(() => {
@@ -2791,16 +2812,16 @@ export default function ModularWorkspace({
     setStatus("Todas las ventanas flotantes se acoplaron al lienzo.");
   }
 
-  function addPane(mode: "docked" | "floating") {
+  function addPane(mode: "docked" | "floating", paneType: PaneType = addType) {
     const reference =
       allPaneValues()[0]?.state.reference ?? initialReference;
     const pickerTypes: PaneType[] = ["bible", "commentary", "dictionary", "book"];
     const pane = makePane(
-      addType,
+      paneType,
       resources,
       reference,
-      addType === "dictionary" ? "none" : "A",
-      !pickerTypes.includes(addType),
+      paneType === "dictionary" ? "none" : "A",
+      !pickerTypes.includes(paneType),
     );
     if (mode === "floating") {
       const canvas = canvasRef.current?.getBoundingClientRect();
@@ -3228,11 +3249,11 @@ export default function ModularWorkspace({
             <button type="button" className="modular-small" onClick={() => setModuleMenuOpen((current) => !current)}>Abrir módulo</button>
             {moduleMenuOpen && (
               <div className="modular-module-menu">
-                <button type="button" onClick={() => { setModuleMenuOpen(false); onOpenModule?.("compare"); }}>Comparador</button>
-                <button type="button" onClick={() => { setModuleMenuOpen(false); onOpenModule?.("ereader"); }}>eReader</button>
-                <button type="button" onClick={() => { setModuleMenuOpen(false); onOpenModule?.("assistant"); }}>Asistente</button>
-                <button type="button" onClick={() => { setModuleMenuOpen(false); onOpenModule?.("notes"); }}>Notas</button>
-                <button type="button" onClick={() => { setModuleMenuOpen(false); onOpenModule?.("sermons"); }}>Sermones</button>
+                <button type="button" onClick={() => { setModuleMenuOpen(false); addPane("docked", "compare" as PaneType); }}>Comparador</button>
+                <button type="button" onClick={() => { setModuleMenuOpen(false); addPane("docked", "ereader" as PaneType); }}>eReader</button>
+                <button type="button" onClick={() => { setModuleMenuOpen(false); addPane("docked", "assistant" as PaneType); }}>Asistente</button>
+                <button type="button" onClick={() => { setModuleMenuOpen(false); addPane("docked", "notes" as PaneType); }}>Notas</button>
+                <button type="button" onClick={() => { setModuleMenuOpen(false); addPane("docked", "sermons" as PaneType); }}>Sermones</button>
               </div>
             )}
           </div>
