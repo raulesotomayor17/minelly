@@ -8,6 +8,7 @@ import {
   type PanelUpdateEvent,
 } from "dockview";
 import "dockview-react/dist/styles/dockview.css";
+import CanvasModuleMenu from "../CanvasModuleMenu";
 import {
   PaneView,
   makePane,
@@ -397,15 +398,7 @@ export default function DockWorkspaceCore({
           <button type="button" onClick={() => setPaletteOpen((current) => !current)}>Abrir recurso</button>
           <div className="modular-module-menu-wrap">
             <button type="button" onClick={() => setModuleMenuOpen((current) => !current)}>Abrir módulo</button>
-            {moduleMenuOpen && (
-              <div className="modular-module-menu">
-                <button type="button" onClick={() => addModule("compare")}>Comparador</button>
-                <button type="button" onClick={() => addModule("ereader")}>eReader</button>
-                <button type="button" onClick={() => addModule("assistant")}>Asistente</button>
-                <button type="button" onClick={() => addModule("notes")}>Notas</button>
-                <button type="button" onClick={() => addModule("sermons")}>Sermones</button>
-              </div>
-            )}
+            {moduleMenuOpen && <CanvasModuleMenu onClose={() => setModuleMenuOpen(false)} onSelect={(id) => addModule(id)} />}
           </div>
 
           <span>{error ? `error: ${error}` : ready ? "dockview" : "montando…"}</span>
