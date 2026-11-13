@@ -259,6 +259,10 @@ export class View extends HTMLElement {
             this.renderer = document.createElement('foliate-paginator')
         }
         this.renderer.setAttribute('exportparts', 'head,foot,filter')
+        Object.assign(this.renderer.style, {
+            display: 'block', width: '100%', height: '100%',
+            minWidth: '0', minHeight: '0', flex: '1 1 auto',
+        })
         this.renderer.addEventListener('load', e => this.#onLoad(e.detail))
         this.renderer.addEventListener('relocate', e => this.#onRelocate(e.detail))
         this.renderer.addEventListener('create-overlayer', e =>
