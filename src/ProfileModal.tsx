@@ -1,29 +1,17 @@
 import { useRef, useState } from "react";
 import { initialsFor, saveProfile, type UserProfile } from "./profile";
+import AvatarCropper from "./AvatarCropper";
 
 export default function ProfileModal({ profile, onClose, onSave }: { profile: UserProfile; onClose: () => void; onSave: (profile: UserProfile) => void }) {
   const [name, setName] = useState(profile.name);
   const [photo, setPhoto] = useState(profile.photo);
+  const [cropSource, setCropSource] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
-  async function pickPhoto(file: File) {
-    const dataUrl = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(String(reader.result));
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-    const image = new Image();
-    image.src = dataUrl;
-    await new Promise((resolve, reject) => { image.onload = resolve; image.onerror = reject; });
-    const canvas = document.createElement("canvas");
-    const size = 320;
-    canvas.width = size; canvas.height = size;
-    const context = canvas.getContext("2d");
-    if (!context) return setPhoto(dataUrl);
-    const side = Math.min(image.width, image.height);
-    context.drawImage(image, (image.width - side) / 2, (image.height - side) / 2, side, side, 0, 0, size, size);
-    setPhoto(canvas.toDataURL("image/jpeg", 0.86));
+  function pickPhoto(file: File) {
+    const reader = new FileReader();
+    reader.onload = () => setCropSource(String(reader.result));
+    reader.readAsDataURL(file);
   }
 
   function submit() {
@@ -31,6 +19,16 @@ export default function ProfileModal({ profile, onClose, onSave }: { profile: Us
     saveProfile(next);
     onSave(next);
     onClose();
+  }
+
+  if (cropSource) {
+    return (
+      <div className="profile-backdrop" role="dialog" aria-modal="true" aria-label="Ajustar fotografía de perfil">
+        <section className="profile-modal avatar-crop-modal">
+          <AvatarCropper source={cropSource} onCancel={() => setCropSource("")} onApply={(dataUrl) => { setPhoto(dataUrl); setCropSource(""); }} />
+        </section>
+      </div>
+    );
   }
 
   return (
@@ -50,7 +48,7 @@ export default function ProfileModal({ profile, onClose, onSave }: { profile: Us
             <p>Se guarda solo en este equipo. No se sube a internet.</p>
             {photo && <button type="button" className="link-button" onClick={() => setPhoto("")}>Quitar fotografía</button>}
           </div>
-          <input ref={fileRef} type="file" accept="image/*" hidden onChange={(event) => { const file = event.target.files?.[0]; if (file) void pickPhoto(file); }} />
+          <input ref={fileRef} type="file" accept="image/*" hidden onChange={(event) => { const file = event.target.files?.[0]; if (file) pickPhoto(file); event.currentTarget.value = ""; }} />
         </div>
         <label className="profile-name-field">
           <span>Nombre visible</span>
