@@ -189,6 +189,7 @@ interface ModularWorkspaceProps {
   readerScale: number;
   studyScale: number;
   onOpenCustomization?: () => void;
+  onOpenModule?: (module: "compare" | "ereader" | "assistant" | "notes" | "sermons") => void;
   onExit: () => void;
 }
 
@@ -2246,6 +2247,7 @@ export default function ModularWorkspace({
   readerScale,
   studyScale,
   onOpenCustomization,
+  onOpenModule,
   onExit,
 }: ModularWorkspaceProps) {
   const [tree, setTree] = useState<LayoutNode>(() => {
@@ -2284,6 +2286,7 @@ export default function ModularWorkspace({
   const [profileName, setProfileName] = useState("");
   const [selectedProfile, setSelectedProfile] = useState("");
   const [localReaderFont, setLocalReaderFont] = useState(readerFont);
+  const [moduleMenuOpen, setModuleMenuOpen] = useState(false);
   const [localStudyFont, setLocalStudyFont] = useState(studyFont);
   const [localReaderScale, setLocalReaderScale] = useState(readerScale);
   const [localStudyScale, setLocalStudyScale] = useState(studyScale);
@@ -3221,6 +3224,18 @@ export default function ModularWorkspace({
           <button className="modular-small" onClick={() => void importLayout()}>
             Importar
           </button>
+          <div className="modular-module-menu-wrap">
+            <button type="button" className="modular-small" onClick={() => setModuleMenuOpen((current) => !current)}>Abrir módulo</button>
+            {moduleMenuOpen && (
+              <div className="modular-module-menu">
+                <button type="button" onClick={() => { setModuleMenuOpen(false); onOpenModule?.("compare"); }}>Comparador</button>
+                <button type="button" onClick={() => { setModuleMenuOpen(false); onOpenModule?.("ereader"); }}>eReader</button>
+                <button type="button" onClick={() => { setModuleMenuOpen(false); onOpenModule?.("assistant"); }}>Asistente</button>
+                <button type="button" onClick={() => { setModuleMenuOpen(false); onOpenModule?.("notes"); }}>Notas</button>
+                <button type="button" onClick={() => { setModuleMenuOpen(false); onOpenModule?.("sermons"); }}>Sermones</button>
+              </div>
+            )}
+          </div>
           <button className="modular-exit" onClick={onExit}>
             Volver
           </button>

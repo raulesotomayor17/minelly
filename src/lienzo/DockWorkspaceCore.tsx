@@ -29,6 +29,7 @@ interface Props {
   studyFont: string;
   studyScale: number;
   onOpenCustomization?: () => void;
+  onOpenModule?: (module: "compare" | "ereader" | "assistant" | "notes" | "sermons") => void;
   onExit: () => void;
 }
 
@@ -218,6 +219,7 @@ export default function DockWorkspaceCore({
   readerScale,
   studyFont,
   studyScale,
+  onOpenModule,
   onExit,
 }: Props) {
   const hostRef = useRef<HTMLDivElement>(null);
@@ -226,6 +228,7 @@ export default function DockWorkspaceCore({
   const [error, setError] = useState("");
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [paletteQuery, setPaletteQuery] = useState("");
+  const [moduleMenuOpen, setModuleMenuOpen] = useState(false);
 
   function addResource(resource: Resource) {
     const api = apiRef.current;
@@ -357,6 +360,18 @@ export default function DockWorkspaceCore({
         </div>
         <div className="dockv2-topbar-actions">
           <button type="button" onClick={() => setPaletteOpen((current) => !current)}>Abrir recurso</button>
+          <div className="modular-module-menu-wrap">
+            <button type="button" onClick={() => setModuleMenuOpen((current) => !current)}>Abrir módulo</button>
+            {moduleMenuOpen && (
+              <div className="modular-module-menu">
+                <button type="button" onClick={() => { setModuleMenuOpen(false); onOpenModule?.("compare"); }}>Comparador</button>
+                <button type="button" onClick={() => { setModuleMenuOpen(false); onOpenModule?.("ereader"); }}>eReader</button>
+                <button type="button" onClick={() => { setModuleMenuOpen(false); onOpenModule?.("assistant"); }}>Asistente</button>
+                <button type="button" onClick={() => { setModuleMenuOpen(false); onOpenModule?.("notes"); }}>Notas</button>
+                <button type="button" onClick={() => { setModuleMenuOpen(false); onOpenModule?.("sermons"); }}>Sermones</button>
+              </div>
+            )}
+          </div>
 
           <span>{error ? `error: ${error}` : ready ? "dockview" : "montando…"}</span>
           <button type="button" onClick={onExit}>Cerrar lienzo</button>
