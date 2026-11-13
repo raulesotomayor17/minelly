@@ -1641,7 +1641,7 @@ export function PaneView({
         )}
 
         {!needsResourcePicker && pane.resourceType === "ereader" && (
-          <EreaderWorkspace embedded onClose={() => undefined} />
+          <EreaderWorkspace embedded resources={resources} onClose={() => undefined} />
         )}
 
         {!needsResourcePicker && pane.resourceType === "bible" && (

@@ -1218,7 +1218,8 @@ impl Catalog {
     ) -> Result<Vec<EpubChapterSummary>> {
         let tx = self.connection.transaction()?;
         tx.execute("UPDATE epub_chapters SET html=?1 WHERE resource_id=?2 AND spine=?3", params![before_html, resource_id, spine])?;
-        tx.execute("UPDATE epub_chapters SET spine=spine+1 WHERE resource_id=?1 AND spine>?2 ORDER BY spine DESC", params![resource_id, spine])?;
+        tx.execute("UPDATE epub_chapters SET spine=spine+1000000 WHERE resource_id=?1 AND spine>?2", params![resource_id, spine])?;
+        tx.execute("UPDATE epub_chapters SET spine=spine-999999 WHERE resource_id=?1 AND spine>?2", params![resource_id, spine + 1000000])?;
         tx.execute("INSERT INTO epub_chapters(resource_id,spine,title,href,html) VALUES(?1,?2,?3,?4,?5)",
             params![resource_id, spine + 1, new_title, format!("pbb://{resource_id}/{}", spine + 1), after_html])?;
         tx.execute("UPDATE resources SET entry_count=(SELECT COUNT(*) FROM epub_chapters WHERE resource_id=?1) WHERE id=?1", [resource_id])?;
@@ -1235,7 +1236,8 @@ impl Catalog {
         let merged = format!("{}<h2 class=\"editorial-part-kicker\">{}</h2>{}", previous, current.0, current.1);
         tx.execute("UPDATE epub_chapters SET html=?1 WHERE resource_id=?2 AND spine=?3", params![merged, resource_id, spine - 1])?;
         tx.execute("DELETE FROM epub_chapters WHERE resource_id=?1 AND spine=?2", params![resource_id, spine])?;
-        tx.execute("UPDATE epub_chapters SET spine=spine-1 WHERE resource_id=?1 AND spine>?2 ORDER BY spine ASC", params![resource_id, spine])?;
+        tx.execute("UPDATE epub_chapters SET spine=spine+1000000 WHERE resource_id=?1 AND spine>?2", params![resource_id, spine])?;
+        tx.execute("UPDATE epub_chapters SET spine=spine-1000001 WHERE resource_id=?1 AND spine>?2", params![resource_id, spine + 1000000])?;
         tx.execute("UPDATE resources SET entry_count=(SELECT COUNT(*) FROM epub_chapters WHERE resource_id=?1) WHERE id=?1", [resource_id])?;
         tx.commit()?;
         self.reindex_epub_fts(resource_id)?;

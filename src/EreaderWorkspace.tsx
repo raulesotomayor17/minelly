@@ -22,13 +22,14 @@ interface Props {
   embedded?: boolean;
   initialPath?: string;
   initialTitle?: string;
+  resources?: Array<{ id: string; title: string; kind: string; sourceFormat?: string; sourcePath?: string }>;
   onClose: () => void;
   onOpenScripture?: (book: number, chapter: number, verse: number, label: string, x: number, y: number) => void;
 }
 
 interface StoredLocation { cfi?: string; fraction?: number; title?: string }
 
-export default function EreaderWorkspace({ embedded = false, initialPath, initialTitle, onClose, onOpenScripture }: Props) {
+export default function EreaderWorkspace({ embedded = false, initialPath, initialTitle, resources = [], onClose, onOpenScripture }: Props) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const viewRef = useRef<any>(null);
   const [title, setTitle] = useState(initialTitle ?? "eReader");
@@ -40,7 +41,7 @@ export default function EreaderWorkspace({ embedded = false, initialPath, initia
   const [font, setFont] = useState("Literata");
   const [fontSize, setFontSize] = useState(1);
   const [error, setError] = useState("");
-  const [panel, setPanel] = useState<"toc" | "notes" | "bookmarks" | "highlights">("toc");
+  const [panel, setPanel] = useState<"library" | "toc" | "notes" | "bookmarks" | "highlights">(initialPath ? "toc" : "library");
   const [highlightColor, setHighlightColor] = useState("#f5d36b");
   const HIGHLIGHT_COLORS = ["#f5d36b", "#86efac", "#93c5fd", "#f9a8d4", "#fdba74"];
   const [bookmarks, setBookmarks] = useState<Array<{ cfi: string; label: string; fraction: number }>>([]);
@@ -140,6 +141,7 @@ export default function EreaderWorkspace({ embedded = false, initialPath, initia
       setTitle(displayTitle || book.metadata?.title || name);
       setCurrentPath(filePath);
       setToc(flattenToc(book.toc ?? []));
+      setPanel("toc");
       try {
         const all = JSON.parse(localStorage.getItem("minelly.ereader-bookmarks.v1") ?? "{}");
         setBookmarks(all[filePath] ?? []);
@@ -248,12 +250,19 @@ export default function EreaderWorkspace({ embedded = false, initialPath, initia
     if (typeof selected === "string") await loadFile(selected);
   }
 
+  const libraryBooks = resources.filter((resource) =>
+    resource.kind === "book" && resource.sourcePath &&
+    !["esword", "mysword", "pbb"].includes((resource.sourceFormat ?? "").toLowerCase()) &&
+    /\.(epub|mobi|azw3|fb2|pdf)$/i.test(resource.sourcePath)
+  );
+
   return (
     <section className={`ereader-workspace${embedded ? " embedded" : ""}`} style={{ "--ereader-font": `"${font}", Georgia, serif`, "--ereader-scale": fontSize } as React.CSSProperties}>
       <header className="ereader-toolbar">
         <div><span className="eyebrow">Lector independiente</span><h1>eReader · {title}</h1></div>
         <div className="ereader-actions">
           <button type="button" onClick={() => void pickFile()}>+ Abrir archivo eBook</button>
+          <button type="button" onClick={() => { setTocOpen(true); setPanel("library"); }}>Libros</button>
           <button type="button" onClick={() => setTocOpen((value) => !value)}>Índice</button>
           <button type="button" onClick={addBookmark}>Marcador</button>
           <button type="button" onClick={() => void addNote()}>Nota</button>
@@ -274,11 +283,23 @@ export default function EreaderWorkspace({ embedded = false, initialPath, initia
       <div className={`ereader-body theme-${theme === "inherit" ? "inherit" : "custom"}`}>
         {tocOpen && <aside className="ereader-toc">
           <div className="ereader-toc-tabs">
+            <button type="button" className={panel === "library" ? "active" : ""} onClick={() => setPanel("library")}>Libros</button>
             <button type="button" className={panel === "toc" ? "active" : ""} onClick={() => setPanel("toc")}>Índice</button>
             <button type="button" className={panel === "notes" ? "active" : ""} onClick={() => setPanel("notes")}>Notas ({notes.length})</button>
             <button type="button" className={panel === "bookmarks" ? "active" : ""} onClick={() => setPanel("bookmarks")}>Marcadores ({bookmarks.length})</button>
             <button type="button" className={panel === "highlights" ? "active" : ""} onClick={() => setPanel("highlights")}>Resaltados ({highlights.length})</button>
           </div>
+          {panel === "library" && (
+            <div className="ereader-library-list">
+              <strong>Libros importados</strong>
+              {libraryBooks.map((resource) => (
+                <button key={resource.id} type="button" onClick={() => resource.sourcePath && void loadFile(resource.sourcePath, resource.title)}>
+                  <span>{resource.title}</span><small>{resource.sourceFormat ?? "eBook"}</small>
+                </button>
+              ))}
+              {libraryBooks.length === 0 && <small>No hay eBooks importados compatibles.</small>}
+            </div>
+          )}
           {panel === "toc" && toc.map((item, index) => (
             <button key={`${item.href}-${index}`} type="button" style={{ paddingLeft: 8 + item.depth * 12 }} onClick={() => void viewRef.current?.goTo(item.href)}>{item.label}</button>
           ))}
@@ -293,6 +314,14 @@ export default function EreaderWorkspace({ embedded = false, initialPath, initia
           ))}
         </aside>}
         <div ref={hostRef} className="ereader-view" />
+        {!currentPath && (
+          <div className="ereader-empty-library">
+            <h2>Biblioteca eReader</h2>
+            <p>Abre un libro importado o elige un archivo eBook.</p>
+            <div>{libraryBooks.map((resource) => <button key={resource.id} type="button" onClick={() => resource.sourcePath && void loadFile(resource.sourcePath, resource.title)}><strong>{resource.title}</strong><small>{resource.sourceFormat ?? "eBook"}</small></button>)}</div>
+            {libraryBooks.length === 0 && <p>No hay libros importados compatibles.</p>}
+          </div>
+        )}
       </div>
       {selection && (
         <div className="ereader-selection-toolbar" style={{ left: selection.x, top: selection.y }}>
