@@ -167,6 +167,7 @@ pub fn run() {
             commands::search_advanced,
             commands::export_slides,
             commands::export_document,
+            commands::export_answer_pdf,
             commands::download_to_base64,
             commands::word_study,
             commands::word_study_search,

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { PaperModePicker } from "./CustomizationModal";
+import { save } from "@tauri-apps/plugin-dialog";
 import LearnHarness from "./LearnHarness";
 
 export interface RagContext {
@@ -934,6 +935,43 @@ export function StudyAssistant({
     updateHistory(history.filter((item) => item.id !== entry.id));
   }
 
+  async function exportAnswer(format: "docx" | "pdf") {
+    if (!activeTurn) return;
+    try {
+      const path = await save({
+        defaultPath: `Minelly-${activeTurn.id}.${format}`,
+        filters: [{ name: format.toUpperCase(), extensions: [format] }],
+      });
+      if (!path) return;
+      const blocks = activeTurn.answer.split(/\n{2,}/).filter(Boolean).map((paragraph) => ({
+        kind: "paragraph", level: 0, text: paragraph,
+      }));
+      if (format === "docx") {
+        await invoke("export_document", { path, format, title: activeTurn.query, blocks });
+      } else {
+        await invoke("export_answer_pdf", { path, title: activeTurn.query, blocks });
+      }
+    } catch (error) {
+      setError(String(error));
+    }
+  }
+
+  function openHistoryEntry(entry: AssistantHistoryEntry) {
+    const turn: ConversationTurn = {
+      id: entry.id, query: entry.query, taskLabel: "Consulta guardada",
+      personaLabel: "Historial", providerLabel: entry.provider, model: entry.model,
+      answer: entry.answer, usedRemoteModel: false, contexts: entry.contexts,
+      usage: { promptTokens: 0, completionTokens: 0, totalTokens: entry.tokens, provider: entry.provider, model: entry.model, timestamp: new Date(entry.createdAt).toLocaleTimeString() },
+    };
+    setTurns((current) => [turn, ...current.filter((item) => item.id !== turn.id)]);
+    setActiveTurnId(turn.id);
+    setHistoryOpen(false);
+  }
+
+  function deleteHistoryEntry(entry: AssistantHistoryEntry) {
+    updateHistory(history.filter((item) => item.id !== entry.id));
+  }
+
   async function ask(customQuery?: string, taskLabel = "Consulta académica") {
     const finalQuery = (customQuery ?? query).trim();
     if (!finalQuery) return;
@@ -1419,6 +1457,8 @@ export function StudyAssistant({
                   >
                     {copiedId === activeTurn.id ? "✓ Copiado" : "Copiar cátedra"}
                   </button>
+                  <button type="button" className="assistant-copy-button" onClick={() => void exportAnswer("docx")}>Exportar DOCX</button>
+                  <button type="button" className="assistant-copy-button" onClick={() => void exportAnswer("pdf")}>Exportar PDF</button>
                 </div>
               </div>
 
@@ -1543,12 +1583,15 @@ export function StudyAssistant({
               <p>{entry.answer.slice(0, 220)}{entry.answer.length > 220 ? "…" : ""}</p>
               <small>{entry.contexts.length} fuentes · {entry.provider}</small>
               <div>
+                <button type="button" onClick={() => openHistoryEntry(entry)}>Abrir</button>
                 {entry.status === "pending" ? (
                   <>
                     <button type="button" onClick={() => saveHistory(entry)}>Guardar</button>
                     <button type="button" onClick={() => discardHistory(entry)}>Desechar</button>
                   </>
-                ) : <span>Guardada</span>}
+                ) : (
+                  <button type="button" onClick={() => deleteHistoryEntry(entry)}>Borrar</button>
+                )}
               </div>
             </article>
           ))}

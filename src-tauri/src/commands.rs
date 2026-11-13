@@ -1706,6 +1706,24 @@ pub fn export_document(
 }
 
 #[tauri::command]
+pub fn export_answer_pdf(path: String, title: String, blocks: Vec<crate::model::DocumentBlock>) -> Result<String, String> {
+    let base = std::path::PathBuf::from(&path);
+    let docx = crate::document_export::export_document(
+        base.with_extension("docx").to_string_lossy().to_string(),
+        "docx".to_string(), title, blocks,
+    ).map_err(message)?;
+    let dir = base.parent().unwrap_or_else(|| std::path::Path::new("."));
+    let output = std::process::Command::new("soffice")
+        .args(["--headless", "--convert-to", "pdf", "--outdir"])
+        .arg(dir).arg(&docx)
+        .output().map_err(message)?;
+    if !output.status.success() {
+        return Err(String::from_utf8_lossy(&output.stderr).to_string());
+    }
+    Ok(base.with_extension("pdf").to_string_lossy().to_string())
+}
+
+#[tauri::command]
 pub async fn download_to_base64(url: String) -> Result<String, String> {
     if url.starts_with("data:") {
         return Ok(url);
