@@ -1191,6 +1191,27 @@ impl Catalog {
         Ok(())
     }
 
+    fn reindex_epub_fts(&mut self, resource_id: &str) -> Result<()> {
+        let chapters = {
+            let mut stmt = self.connection.prepare("SELECT spine,title,href,html FROM epub_chapters WHERE resource_id=?1 ORDER BY spine")?;
+            let rows = stmt.query_map([resource_id], |row| Ok(EpubChapter { spine: row.get(0)?, title: row.get(1)?, href: row.get(2)?, html: row.get(3)? }))?;
+            rows.collect::<rusqlite::Result<Vec<_>>>()?
+        };
+        self.replace_pbb_fts(resource_id, &chapters)?;
+        let tx = self.connection.transaction()?;
+        tx.execute("DELETE FROM global_search_index WHERE resource_id=?1", [resource_id])?;
+        {
+            let mut insert = tx.prepare("INSERT INTO global_search_index(resource_id,module_type,reference_key,content_text) VALUES(?1,'book',?2,?3)")?;
+            let tag = Regex::new(r"<[^>]+>").unwrap();
+            for chapter in &chapters {
+                let text = tag.replace_all(&chapter.html, " ").split_whitespace().collect::<Vec<_>>().join(" ");
+                insert.execute(params![resource_id, chapter.title, text])?;
+            }
+        }
+        tx.commit()?;
+        Ok(())
+    }
+
     pub fn split_epub_chapter(
         &mut self, resource_id: &str, spine: i64, before_html: &str,
         after_html: &str, new_title: &str,
@@ -1202,6 +1223,7 @@ impl Catalog {
             params![resource_id, spine + 1, new_title, format!("pbb://{resource_id}/{}", spine + 1), after_html])?;
         tx.execute("UPDATE resources SET entry_count=(SELECT COUNT(*) FROM epub_chapters WHERE resource_id=?1) WHERE id=?1", [resource_id])?;
         tx.commit()?;
+        self.reindex_epub_fts(resource_id)?;
         self.epub_chapters(resource_id)
     }
 
@@ -1216,6 +1238,7 @@ impl Catalog {
         tx.execute("UPDATE epub_chapters SET spine=spine-1 WHERE resource_id=?1 AND spine>?2 ORDER BY spine ASC", params![resource_id, spine])?;
         tx.execute("UPDATE resources SET entry_count=(SELECT COUNT(*) FROM epub_chapters WHERE resource_id=?1) WHERE id=?1", [resource_id])?;
         tx.commit()?;
+        self.reindex_epub_fts(resource_id)?;
         self.epub_chapters(resource_id)
     }
 
