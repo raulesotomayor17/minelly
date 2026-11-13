@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { greetingForHour, initialsFor, type UserProfile } from "./profile";
 
 interface DashboardProps {
   currentBible: string;
@@ -7,6 +8,8 @@ interface DashboardProps {
   currentChapter: number;
   currentVerse: number;
   readingPercent?: number;
+  profile: UserProfile;
+  onOpenProfile: () => void;
   bibleCount: number;
   commentaryCount: number;
   bookCount: number;
@@ -76,6 +79,8 @@ export default function Dashboard({
   currentChapter,
   currentVerse,
   readingPercent = 0,
+  profile,
+  onOpenProfile,
   bibleCount,
   commentaryCount,
   bookCount,
@@ -155,10 +160,15 @@ export default function Dashboard({
     <section className="home-dashboard" aria-label="Panel de control">
       <div className="home-dashboard-inner">
         <header className="home-dashboard-head">
-          <div>
-            <span className="eyebrow">Panel de control</span>
-            <h1>Buenos días</h1>
-            <p>{dateLabel} · {currentBible}</p>
+          <div className="home-greeting">
+            <button type="button" className="profile-avatar home-avatar" onClick={onOpenProfile} title={profile.name ? "Editar perfil" : "Añadir foto y nombre"}>
+              {profile.photo ? <img src={profile.photo} alt={`Perfil de ${profile.name || "usuario"}`} /> : <span>{initialsFor(profile.name)}</span>}
+            </button>
+            <div>
+              <span className="eyebrow">Panel de control</span>
+              <h1>{greetingForHour()}{profile.name ? `, ${profile.name}` : ""}</h1>
+              <p>{dateLabel} · {currentBible}</p>
+            </div>
           </div>
           <div className="home-ask">
             <span>✦</span>
