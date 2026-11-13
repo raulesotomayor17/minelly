@@ -2876,7 +2876,7 @@ function App() {
       setFootnotePreview({
         x: Math.max(12, Math.min(window.innerWidth - 300, event.clientX + 8)),
         y: Math.max(12, Math.min(window.innerHeight - 220, event.clientY + 8)),
-        text: (source?.textContent ?? footnote.getAttribute("title") ?? "Nota al pie").trim(),
+        text: (source?.textContent ?? footnote.getAttribute("data-footnote") ?? footnote.getAttribute("title") ?? "Nota al pie").trim(),
       });
       return;
     }

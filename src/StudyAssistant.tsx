@@ -76,6 +76,20 @@ export interface ConversationTurn {
   usage: TokenUsageRecord;
 }
 
+interface AssistantHistoryEntry {
+  id: string;
+  query: string;
+  answer: string;
+  provider: string;
+  model: string;
+  contexts: RagContext[];
+  tokens: number;
+  createdAt: number;
+  status: "pending" | "saved";
+}
+
+const HISTORY_KEY = "teoamoxtli.assistant-history.v1";
+
 interface ProviderPreset {
   id: AiProviderId;
   name: string;
@@ -480,6 +494,10 @@ export function StudyAssistant({
   const [showKeyPlain, setShowKeyPlain] = useState(false);
   const [turns, setTurns] = useState<ConversationTurn[]>([]);
   const [activeTurnId, setActiveTurnId] = useState<string | null>(null);
+  const [history, setHistory] = useState<AssistantHistoryEntry[]>(() => {
+    try { return JSON.parse(localStorage.getItem(HISTORY_KEY) ?? "[]"); } catch { return []; }
+  });
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const currentProvider = useMemo(
@@ -903,6 +921,19 @@ export function StudyAssistant({
     }
   }
 
+  function updateHistory(next: AssistantHistoryEntry[]) {
+    setHistory(next);
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(next));
+  }
+
+  function saveHistory(entry: AssistantHistoryEntry) {
+    updateHistory(history.map((item) => item.id === entry.id ? { ...item, status: "saved" } : item));
+  }
+
+  function discardHistory(entry: AssistantHistoryEntry) {
+    updateHistory(history.filter((item) => item.id !== entry.id));
+  }
+
   async function ask(customQuery?: string, taskLabel = "Consulta académica") {
     const finalQuery = (customQuery ?? query).trim();
     if (!finalQuery) return;
@@ -969,6 +1000,12 @@ export function StudyAssistant({
 
       setTurns((prev) => [newTurn, ...prev]);
       setActiveTurnId(newTurn.id);
+      updateHistory([{
+        id: newTurn.id, query: newTurn.query, answer: newTurn.answer,
+        provider: newTurn.providerLabel, model: newTurn.model,
+        contexts: newTurn.contexts, tokens: newTurn.usage.totalTokens,
+        createdAt: Date.now(), status: "pending" as const,
+      }, ...history].slice(0, 100));
     } catch (err) {
       setError(String(err));
     } finally {
@@ -1048,6 +1085,9 @@ export function StudyAssistant({
             </button>
           </div>
 
+          <button type="button" className="secondary-button" onClick={() => setHistoryOpen((v) => !v)}>
+            Historial ({history.filter((item) => item.status === "pending").length})
+          </button>
           <button
             type="button"
             className="secondary-button"
@@ -1482,29 +1522,39 @@ export function StudyAssistant({
             ))}
 
             {(!activeTurn || activeTurn.contexts.length === 0) && (
-              <div className="assistant-side-card">
-                <strong>¿Cómo funciona la conexión con tu biblioteca?</strong>
-                <ul>
-                  <li>
-                    <strong>1. Búsqueda Multi-Índice:</strong> El asistente rastrea en
-                    tiempo real tus Biblias, Comentarios, Diccionarios y Libros PBB/EPUB.
-                  </li>
-                  <li>
-                    <strong>2. Inyección Documental (RAG):</strong> Los fragmentos exactos
-                    se entregan al modelo con códigos <code>[V1]</code>, <code>[C2]</code>,{" "}
-                    <code>[D3]</code>, <code>[L4]</code>.
-                  </li>
-                  <li>
-                    <strong>3. Transparencia de Tokens:</strong> Cuando usas{" "}
-                    <strong>DeepSeek Harness</strong> o <strong>Google Gemini</strong>, la
-                    barra superior te muestra los tokens reales de entrada y salida.
-                  </li>
-                </ul>
-              </div>
+              <details className="assistant-side-card assistant-help">
+                <summary>¿Cómo funciona la conexión con tu biblioteca?</summary>
+                <p>Busca en tus Biblias, comentarios, diccionarios y libros; entrega fragmentos [V1]–[L4] al modelo y muestra el consumo real de tokens.</p>
+              </details>
             )}
           </div>
         </aside>
       </div>
+      {historyOpen && (
+        <aside className="assistant-history-drawer" aria-label="Historial de consultas">
+          <header>
+            <strong>Historial de consultas</strong>
+            <button type="button" onClick={() => setHistoryOpen(false)}>×</button>
+          </header>
+          {history.length === 0 && <p className="empty-hint">Aún no hay consultas.</p>}
+          {history.map((entry) => (
+            <article key={entry.id} className={entry.status}>
+              <div><strong>{entry.query}</strong><small>{new Date(entry.createdAt).toLocaleString("es-MX")} · {entry.tokens} tokens</small></div>
+              <p>{entry.answer.slice(0, 220)}{entry.answer.length > 220 ? "…" : ""}</p>
+              <small>{entry.contexts.length} fuentes · {entry.provider}</small>
+              <div>
+                {entry.status === "pending" ? (
+                  <>
+                    <button type="button" onClick={() => saveHistory(entry)}>Guardar</button>
+                    <button type="button" onClick={() => discardHistory(entry)}>Desechar</button>
+                  </>
+                ) : <span>Guardada</span>}
+              </div>
+            </article>
+          ))}
+        </aside>
+      )}
+
     </section>
   );
 }

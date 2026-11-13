@@ -71,6 +71,12 @@ pub fn read_docx(path: &Path) -> Result<DocxDocument> {
     let styles_xml = read_entry(&mut archive, "word/styles.xml")?.unwrap_or_default();
     let core_xml = read_entry(&mut archive, "docProps/core.xml")?.unwrap_or_default();
     let app_xml = read_entry(&mut archive, "docProps/app.xml")?.unwrap_or_default();
+    let footnotes_xml = read_entry(&mut archive, "word/footnotes.xml")?.unwrap_or_default();
+    let endnotes_xml = read_entry(&mut archive, "word/endnotes.xml")?.unwrap_or_default();
+    let rels_xml = read_entry(&mut archive, "word/_rels/document.xml.rels")?.unwrap_or_default();
+    let footnotes = parse_notes(&footnotes_xml);
+    let endnotes = parse_notes(&endnotes_xml);
+    let images = parse_images(&mut archive, &rels_xml)?;
 
     let styles = parse_styles(&styles_xml)?;
     let document = Document::parse(&document_xml)
@@ -102,7 +108,7 @@ pub fn read_docx(path: &Path) -> Result<DocxDocument> {
     let mut paragraphs = Vec::new();
     for child in body.children().filter(|node| node.is_element()) {
         if child.has_tag_name((W, "p")) {
-            paragraphs.push(parse_paragraph(child, &styles, &toc_targets, has_any_top_of));
+            paragraphs.push(parse_paragraph(child, &styles, &toc_targets, has_any_top_of, &footnotes, &endnotes, &images));
         } else if child.has_tag_name((W, "tbl")) {
             for paragraph in child
                 .descendants()
@@ -113,6 +119,9 @@ pub fn read_docx(path: &Path) -> Result<DocxDocument> {
                     &styles,
                     &toc_targets,
                     has_any_top_of,
+                    &footnotes,
+                    &endnotes,
+                    &images,
                 ));
             }
         }
@@ -607,7 +616,14 @@ fn parse_styles(xml: &str) -> Result<HashMap<String, StyleInfo>> {
     Ok(styles)
 }
 
-fn render_run(run: Node<'_, '_>, text_acc: &mut String, inside_hyperlink: bool) -> String {
+fn render_run(
+    run: Node<'_, '_>,
+    text_acc: &mut String,
+    inside_hyperlink: bool,
+    footnotes: &HashMap<String, String>,
+    endnotes: &HashMap<String, String>,
+    images: &HashMap<String, String>,
+) -> String {
     let mut run_text = String::new();
     for child in run.children().filter(|child| child.is_element()) {
         if child.has_tag_name((W, "t")) {
@@ -616,6 +632,27 @@ fn render_run(run: Node<'_, '_>, text_acc: &mut String, inside_hyperlink: bool) 
             run_text.push('\t');
         } else if child.has_tag_name((W, "br")) {
             run_text.push('\n');
+        }
+    }
+    // Notas al pie y notas finales.
+    for child in run.children().filter(|child| child.is_element()) {
+        let tag = child.tag_name().name();
+        if tag == "footnoteReference" || tag == "endnoteReference" {
+            let id = attribute(child, "id").unwrap_or_default();
+            let note = if tag == "footnoteReference" { footnotes.get(&id) } else { endnotes.get(&id) };
+            if let Some(note) = note {
+                text_acc.push_str(&format!("[{id}]"));
+                return format!("<sup class=\"footnote-ref\" data-footnote=\"{}\">{}</sup>", escape_html(note), escape_html(&id));
+            }
+        }
+        if tag == "drawing" || tag == "pict" {
+            if let Some(embed) = child.descendants().find(|n| n.tag_name().name() == "blip")
+                .and_then(|blip| blip.attributes().find(|a| a.name() == "embed"))
+            {
+                if let Some(data) = images.get(embed.value()) {
+                    return format!("<img src=\"{data}\" class=\"docx-image\" alt=\"\" />");
+                }
+            }
         }
     }
     if run_text.is_empty() {
@@ -653,11 +690,60 @@ fn render_run(run: Node<'_, '_>, text_acc: &mut String, inside_hyperlink: bool) 
     escaped
 }
 
+fn parse_notes(xml: &str) -> HashMap<String, String> {
+    let mut notes = HashMap::new();
+    if xml.trim().is_empty() { return notes; }
+    let Ok(doc) = Document::parse(xml) else { return notes; };
+    for note in doc.descendants().filter(|n| n.has_tag_name((W, "footnote")) || n.has_tag_name((W, "endnote"))) {
+        let Some(id) = attribute(note, "id") else { continue; };
+        if id == "-1" || id == "0" { continue; }
+        let text = note.descendants().filter(|n| n.has_tag_name((W, "t")))
+            .filter_map(|n| n.text()).collect::<Vec<_>>().join(" ").split_whitespace().collect::<Vec<_>>().join(" ");
+        if !text.is_empty() { notes.insert(id, text); }
+    }
+    notes
+}
+
+fn parse_images(archive: &mut ZipArchive<File>, rels_xml: &str) -> Result<HashMap<String, String>> {
+    let mut images = HashMap::new();
+    if rels_xml.trim().is_empty() { return Ok(images); }
+    let doc = Document::parse(rels_xml)?;
+    for rel in doc.descendants().filter(|n| n.tag_name().name() == "Relationship") {
+        let Some(id) = rel.attribute("Id") else { continue; };
+        let Some(target) = rel.attribute("Target") else { continue; };
+        if !target.contains("media/") { continue; }
+        let path = format!("word/{}", target.trim_start_matches('/').trim_start_matches("word/"));
+        if let Some(entry) = read_entry_binary(archive, &path)? {
+            let mime = if target.ends_with(".png") { "image/png" }
+                else if target.ends_with(".jpg") || target.ends_with(".jpeg") { "image/jpeg" }
+                else if target.ends_with(".gif") { "image/gif" }
+                else if target.ends_with(".svg") { "image/svg+xml" }
+                else { "application/octet-stream" };
+            let encoded = base64::Engine::encode(&base64::engine::general_purpose::STANDARD, &entry);
+            images.insert(id.to_string(), format!("data:{mime};base64,{encoded}"));
+        }
+    }
+    Ok(images)
+}
+
+fn read_entry_binary(archive: &mut ZipArchive<File>, name: &str) -> Result<Option<Vec<u8>>> {
+    let mut entry = match archive.by_name(name) {
+        Ok(entry) => entry,
+        Err(_) => return Ok(None),
+    };
+    let mut bytes = Vec::new();
+    entry.read_to_end(&mut bytes)?;
+    Ok(Some(bytes))
+}
+
 fn parse_paragraph(
     node: Node<'_, '_>,
     styles: &HashMap<String, StyleInfo>,
     toc_targets: &HashSet<String>,
     has_any_top_of: bool,
+    footnotes: &HashMap<String, String>,
+    endnotes: &HashMap<String, String>,
+    images: &HashMap<String, String>,
 ) -> Paragraph {
     let style_id = node
         .children()
@@ -707,7 +793,7 @@ fn parse_paragraph(
     for child in node.children().filter(|c| c.is_element()) {
         if child.has_tag_name((W, "r")) {
             let mut run_text = String::new();
-            let rendered = render_run(child, &mut run_text, false);
+            let rendered = render_run(child, &mut run_text, false, footnotes, endnotes, images);
             if !run_text.trim().is_empty() {
                 saw_text_run = true;
                 let rpr = child.children().find(|n| n.has_tag_name((W, "rPr")));
@@ -739,7 +825,7 @@ fn parse_paragraph(
             let anchor = attribute(child, "anchor").unwrap_or_default();
             let mut link_html = String::new();
             for run in child.descendants().filter(|n| n.has_tag_name((W, "r"))) {
-                link_html.push_str(&render_run(run, &mut text, true));
+                link_html.push_str(&render_run(run, &mut text, true, footnotes, endnotes, images));
             }
             if !anchor.is_empty() && !link_html.is_empty() {
                 let esc_anchor = escape_html(&anchor);
