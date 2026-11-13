@@ -7,15 +7,16 @@ import { flattenToc } from "./vendor/foliate-js/toc.js";
 import { Overlayer } from "./vendor/foliate-js/overlayer.js";
 
 interface Props {
+  embedded?: boolean;
   initialPath?: string;
   initialTitle?: string;
   onClose: () => void;
-  onOpenScripture: (book: number, chapter: number, verse: number, label: string, x: number, y: number) => void;
+  onOpenScripture?: (book: number, chapter: number, verse: number, label: string, x: number, y: number) => void;
 }
 
 interface StoredLocation { cfi?: string; fraction?: number; title?: string }
 
-export default function EreaderWorkspace({ initialPath, initialTitle, onClose, onOpenScripture }: Props) {
+export default function EreaderWorkspace({ embedded = false, initialPath, initialTitle, onClose, onOpenScripture }: Props) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const viewRef = useRef<any>(null);
   const [title, setTitle] = useState(initialTitle ?? "eReader");
@@ -27,7 +28,9 @@ export default function EreaderWorkspace({ initialPath, initialTitle, onClose, o
   const [font, setFont] = useState("Literata");
   const [fontSize, setFontSize] = useState(1);
   const [error, setError] = useState("");
-  const [panel, setPanel] = useState<"toc" | "notes" | "bookmarks">("toc");
+  const [panel, setPanel] = useState<"toc" | "notes" | "bookmarks" | "highlights">("toc");
+  const [highlightColor, setHighlightColor] = useState("#f5d36b");
+  const HIGHLIGHT_COLORS = ["#f5d36b", "#86efac", "#93c5fd", "#f9a8d4", "#fdba74"];
   const [bookmarks, setBookmarks] = useState<Array<{ cfi: string; label: string; fraction: number }>>([]);
   const [notes, setNotes] = useState<Array<{ title: string; text: string }>>([]);
   const [selection, setSelection] = useState<{ text: string; x: number; y: number } | null>(null);
@@ -77,7 +80,7 @@ export default function EreaderWorkspace({ initialPath, initialTitle, onClose, o
           if (!link) return;
           clickEvent.preventDefault();
           clickEvent.stopImmediatePropagation();
-          onOpenScripture(
+          onOpenScripture?.(
             Number(link.dataset.book || 0), Number(link.dataset.chapter || 1),
             Number(link.dataset.verse || 1), link.dataset.label || link.textContent || "",
             clickEvent.clientX + (hostRef.current?.getBoundingClientRect().left ?? 0),
@@ -171,7 +174,7 @@ export default function EreaderWorkspace({ initialPath, initialTitle, onClose, o
       const content = contents.find((item: any) => item.doc === range.startContainer.ownerDocument) ?? contents[0];
       if (!content) return;
       const cfi = view.getCFI(content.index, range);
-      const highlight = { cfi, color: "#f5d36b" };
+      const highlight = { cfi, color: highlightColor };
       const next = [...highlights, highlight];
       setHighlights(next);
       const all = JSON.parse(localStorage.getItem("minelly.ereader-highlights.v1") ?? "{}");
@@ -180,6 +183,17 @@ export default function EreaderWorkspace({ initialPath, initialTitle, onClose, o
       void view.addAnnotation({ value: cfi, color: highlight.color });
       setSelection(null);
     } catch (error) { setError(String(error)); }
+  }
+
+  function deleteHighlight(cfi: string) {
+    setHighlights((current) => {
+      const next = current.filter((item) => item.cfi !== cfi);
+      const all = JSON.parse(localStorage.getItem("minelly.ereader-highlights.v1") ?? "{}");
+      all[currentPath || "externo"] = next;
+      localStorage.setItem("minelly.ereader-highlights.v1", JSON.stringify(next ? all : all));
+      return next;
+    });
+    void viewRef.current?.deleteAnnotation?.({ value: cfi });
   }
 
   async function toggleFullscreen() {
@@ -204,7 +218,7 @@ export default function EreaderWorkspace({ initialPath, initialTitle, onClose, o
   }
 
   return (
-    <section className="ereader-workspace" style={{ "--ereader-font": `"${font}", Georgia, serif`, "--ereader-scale": fontSize } as React.CSSProperties}>
+    <section className={`ereader-workspace${embedded ? " embedded" : ""}`} style={{ "--ereader-font": `"${font}", Georgia, serif`, "--ereader-scale": fontSize } as React.CSSProperties}>
       <header className="ereader-toolbar">
         <div><span className="eyebrow">Lector independiente</span><h1>eReader · {title}</h1></div>
         <div className="ereader-actions">
@@ -223,7 +237,7 @@ export default function EreaderWorkspace({ initialPath, initialTitle, onClose, o
           <button type="button" onClick={() => setFontSize((value) => Math.min(1.8, value + 0.1))}>A+</button>
           <button type="button" onClick={() => void viewRef.current?.prev()}>←</button>
           <button type="button" onClick={() => void viewRef.current?.next()}>→</button>
-          <button type="button" onClick={onClose}>Cerrar</button>
+          {!embedded && <button type="button" onClick={onClose}>Cerrar</button>}
         </div>
       </header>
       <div className={`ereader-body theme-${theme}`}>
@@ -232,17 +246,28 @@ export default function EreaderWorkspace({ initialPath, initialTitle, onClose, o
             <button type="button" className={panel === "toc" ? "active" : ""} onClick={() => setPanel("toc")}>Índice</button>
             <button type="button" className={panel === "notes" ? "active" : ""} onClick={() => setPanel("notes")}>Notas ({notes.length})</button>
             <button type="button" className={panel === "bookmarks" ? "active" : ""} onClick={() => setPanel("bookmarks")}>Marcadores ({bookmarks.length})</button>
+            <button type="button" className={panel === "highlights" ? "active" : ""} onClick={() => setPanel("highlights")}>Resaltados ({highlights.length})</button>
           </div>
           {panel === "toc" && toc.map((item, index) => (
             <button key={`${item.href}-${index}`} type="button" style={{ paddingLeft: 8 + item.depth * 12 }} onClick={() => void viewRef.current?.goTo(item.href)}>{item.label}</button>
           ))}
           {panel === "notes" && notes.map((note, index) => <div key={index} className="ereader-note"><strong>{note.title}</strong><small>{note.text.slice(0, 90)}</small></div>)}
           {panel === "bookmarks" && bookmarks.map((bookmark, index) => <button key={index} type="button" onClick={() => void viewRef.current?.goTo(bookmark.cfi)}>{bookmark.label}</button>)}
+          {panel === "highlights" && highlights.map((highlight, index) => (
+            <div key={index} className="ereader-highlight-row">
+              <i style={{ background: highlight.color }} />
+              <button type="button" onClick={() => void viewRef.current?.goTo(highlight.cfi)}>Ir al resaltado</button>
+              <button type="button" onClick={() => deleteHighlight(highlight.cfi)}>×</button>
+            </div>
+          ))}
         </aside>}
         <div ref={hostRef} className="ereader-view" />
       </div>
       {selection && (
         <div className="ereader-selection-toolbar" style={{ left: selection.x, top: selection.y }}>
+          <span className="ereader-color-row">{HIGHLIGHT_COLORS.map((color) => (
+            <button key={color} type="button" className={highlightColor === color ? "active" : ""} style={{ background: color }} onClick={() => setHighlightColor(color)} aria-label={`Color ${color}`} />
+          ))}</span>
           <button type="button" onClick={highlightSelection}>Resaltar</button>
           <button type="button" onClick={() => void addNote()}>Nota</button>
           <button type="button" onClick={addBookmark}>Marcador</button>
