@@ -16553,3 +16553,18 @@ html:is([data-theme="white"],[data-theme="warm"],[data-theme="terracotta"],[data
 
 .ereader-workspace foliate-view { display: block !important; width: 100% !important; height: 100% !important; min-height: 0; background: #fff; }
 .ereader-workspace.embedded .ereader-view { min-height: 260px; }
+
+.ereader-library-list { display: grid; gap: 3px; }
+.ereader-library-list strong { display: block; padding: 5px; }
+.ereader-library-list button { display: grid; gap: 1px; padding: 6px; border: 1px solid var(--border-soft); border-radius: 4px; background: var(--bg-input); color: var(--text-primary); text-align: left; cursor: pointer; }
+.ereader-library-list small { color: var(--text-muted); font-size: 9px; }
+.ereader-view.empty { background: var(--bg-canvas); }
+.ereader-empty-library { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 8px; padding: 30px; color: var(--text-primary); }
+.ereader-empty-library h2 { font-family: var(--serif); margin: 0; }
+.ereader-empty-library p { color: var(--text-secondary); font-size: 12px; margin: 0; }
+.ereader-empty-library > div { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px,1fr)); gap: 7px; width: min(900px,100%); }
+.ereader-empty-library button { display: grid; gap: 3px; padding: 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-card); color: var(--text-primary); text-align: left; cursor: pointer; }
+.ereader-empty-library button small { color: var(--text-muted); font-size: 10px; }
+
+.ereader-body { position: relative; }
+.ereader-empty-library { position: absolute; inset: 0; z-index: 2; background: var(--bg-canvas); }

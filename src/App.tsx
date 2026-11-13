@@ -7335,6 +7335,7 @@ function App() {
           <EreaderWorkspace
             initialPath={ereaderPath}
             initialTitle={ereaderTitle}
+            resources={resources}
             onClose={() => setShowEreader(false)}
             onOpenScripture={(refBook, refChapter, refVerse, label, x, y) => void openScriptureRefPreview(refBook, refChapter, refVerse, refVerse, label, x, y)}
           />
