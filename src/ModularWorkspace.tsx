@@ -810,6 +810,7 @@ export function PaneView({
   const [searchInput, setSearchInput] = useState(pane.state.searchQuery ?? "");
   const [searchHits, setSearchHits] = useState<ModSearchHit[]>([]);
   const [tabMenuOpen, setTabMenuOpen] = useState(false);
+  const [compareVersionsOpen, setCompareVersionsOpen] = useState(false);
   const [paneScale, setPaneScale] = useState(1);
   const [showTopics, setShowTopics] = useState(true);
   const [showRecentTopics, setShowRecentTopics] = useState(false);
@@ -1810,6 +1811,12 @@ export function PaneView({
                 Δ Diferencias
               </button>
             </div>
+            <div className="mod-compare-picker">
+              <button type="button" className="mod-compare-picker-toggle" onClick={() => setCompareVersionsOpen((value) => !value)}>
+                {compareVersionsOpen ? "▾" : "▸"} Versiones comparadas ({activeCompareIds.length + 1})
+              </button>
+              {compareVersionsOpen && (
+                <>
             <label className="mod-compare-base-select">
               <span>Biblia preferida / base</span>
               <select
@@ -1858,6 +1865,9 @@ export function PaneView({
                   </button>
                 );
               })}
+            </div>
+                </>
+              )}
             </div>
             {loading && <p className="mod-muted">Cargando comparación…</p>}
             {(() => {
