@@ -5,6 +5,7 @@ import type { JSONContent } from "@tiptap/core";
 import NoteEditor, { emptyNoteDocument } from "./NoteEditor";
 import { anchorLabel, parseAnchor } from "./anchors";
 import { PaperModePicker } from "./CustomizationModal";
+import ModuleEmblem from "./ModuleEmblem";
 
 interface BookInfo {
   number: number;
@@ -559,6 +560,7 @@ export default function NotesWorkspace({
       style={{ "--notes-scale": notesScale } as React.CSSProperties}
     >
       <header className="notes-header">
+        <span className="module-emblem notes"><ModuleEmblem id="notes" size={22} /></span>
         <div>
           <span className="eyebrow">Cuadernos y anclajes</span>
           <h1>Notas</h1>

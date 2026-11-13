@@ -5,6 +5,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { processBookChapterHtml } from "./bookProcessor";
 import { flattenToc } from "./vendor/foliate-js/toc.js";
 import { Overlayer } from "./vendor/foliate-js/overlayer.js";
+import ModuleEmblem from "./ModuleEmblem";
 
 const EREADER_THEMES = [
   { id: "inherit", label: "Tema actual", bg: "", fg: "" },
@@ -266,7 +267,7 @@ export default function EreaderWorkspace({ embedded = false, initialPath, initia
   return (
     <section className={`ereader-workspace${embedded ? " embedded" : ""}`} style={{ "--ereader-font": `"${font}", Georgia, serif`, "--ereader-scale": fontSize } as React.CSSProperties}>
       <header className="ereader-toolbar">
-        <div><span className="eyebrow">Lector independiente</span><h1>eReader · {title}</h1></div>
+        <div className="ereader-title"><span className="module-emblem ereader"><ModuleEmblem id="ereader" size={20} /></span><div><span className="eyebrow">Lector independiente</span><h1>eReader · {title}</h1></div></div>
         <div className="ereader-actions">
           <button type="button" onClick={() => void pickFile()}>+ Abrir archivo eBook</button>
           <button type="button" onClick={() => { setTocOpen(true); setPanel("library"); }}>Libros</button>

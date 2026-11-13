@@ -3,6 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { PaperModePicker } from "./CustomizationModal";
 import { save } from "@tauri-apps/plugin-dialog";
 import LearnHarness from "./LearnHarness";
+import ModuleEmblem from "./ModuleEmblem";
 
 export interface RagContext {
   id: string;
@@ -1091,6 +1092,7 @@ export function StudyAssistant({
       }
     >
       <header className="assistant-header">
+        <span className="module-emblem assistant"><ModuleEmblem id="assistant" size={22} /></span>
         <div className="assistant-header-titles">
           <div className="eyebrow">
             CÁTEDRA ACADÉMICA HARVARD · MULTI-PROVEEDOR IA Y BIBLIOTECA LOCAL

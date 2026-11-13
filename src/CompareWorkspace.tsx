@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import SelectMenu from "./SelectMenu";
 import { PaperModePicker } from "./CustomizationModal";
+import ModuleEmblem from "./ModuleEmblem";
 
 type DiffType = "unchanged" | "deleted" | "added";
 
@@ -331,12 +332,29 @@ export default function CompareWorkspace({
     >
       <header className="compare-toolbar">
         <div className="compare-title">
+          <span className="compare-module-emblem"><ModuleEmblem id="compare" size={22} /></span>
+          <div>
           <span className="eyebrow">Estudio comparado</span>
           <h1>Comparador de versiones</h1>
           <p>
             {base?.title ?? "Biblia"} · {passages[baseId]?.book.name ?? ""}{" "}
             {chapter} · {columns.length} versiones
           </p>
+          </div>
+        </div>
+
+        <div className="compare-base-control">
+          <span className="compare-base-star">★</span>
+          <label>
+            <small>Biblia base</small>
+            <SelectMenu
+              className="compare-base-select"
+              value={baseId}
+              onChange={(value) => setColumn(0, value)}
+              ariaLabel="Elegir Biblia base"
+              options={bibles.map((item) => ({ value: item.id, label: item.abbreviation ? `${item.abbreviation} · ${item.title}` : item.title }))}
+            />
+          </label>
         </div>
 
         <div className="compare-passage">
@@ -438,7 +456,7 @@ export default function CompareWorkspace({
           {columns.map((resourceId, index) => {
             const resource = bibles.find((item) => item.id === resourceId);
             return (
-              <div className="compare-column-head" key={resourceId}>
+              <div className={`compare-column-head${index === 0 ? " is-base" : ""}`} key={resourceId}>
                 <div className="compare-column-top">
                   <SelectMenu
                     className="compare-version-select"
