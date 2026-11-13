@@ -16499,3 +16499,16 @@ html:is([data-theme="white"],[data-theme="warm"],[data-theme="terracotta"],[data
 .assistant-full-references h3 { margin: 0 0 5px; font-family: var(--serif); font-size: 14px; color: var(--text-primary); }
 .assistant-full-references p { margin: 2px 0; font-size: 10.5px; line-height: 1.45; }
 .assistant-copy-button { margin-left: 4px; padding: 4px 7px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-input); color: var(--text-primary); font-size: 10px; cursor: pointer; }
+
+.assistant-followup { display: flex; gap: 6px; align-items: flex-end; margin: 10px 0; padding-top: 8px; border-top: 1px solid var(--border); }
+.assistant-followup textarea { flex: 1; resize: vertical; min-height: 42px; padding: 7px 9px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-input); color: var(--text-primary); font: inherit; }
+.assistant-followup button { min-height: 36px; }
+.assistant-floating-source { position: fixed; width: min(430px, 88vw); max-height: 55vh; display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-card); color: var(--text-primary); box-shadow: 0 18px 55px rgba(0,0,0,.4); overflow: hidden; }
+.assistant-floating-source > header { display: flex; align-items: center; gap: 6px; padding: 7px 8px; background: var(--bg-shell); border-bottom: 1px solid var(--border); cursor: grab; }
+.assistant-floating-source > header strong { font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.assistant-floating-source > header span { flex: 1; color: var(--text-muted); font-size: 9px; }
+.assistant-floating-source > header button { border: 0; background: transparent; color: var(--text-primary); cursor: pointer; }
+.assistant-floating-body { overflow: auto; padding: 9px; }
+.assistant-floating-body p { margin: 0 0 8px; color: var(--text-secondary); font-size: 11px; line-height: 1.55; white-space: pre-wrap; }
+.assistant-floating-body > div { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.assistant-floating-body code { color: var(--text-muted); font-size: 9px; }

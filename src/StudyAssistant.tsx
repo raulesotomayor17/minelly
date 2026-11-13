@@ -499,6 +499,8 @@ export function StudyAssistant({
     try { return JSON.parse(localStorage.getItem(HISTORY_KEY) ?? "[]"); } catch { return []; }
   });
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [followUp, setFollowUp] = useState("");
+  const [floatingSources, setFloatingSources] = useState<Array<{ context: RagContext; x: number; y: number; minimized: boolean }>>([]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const currentProvider = useMemo(
@@ -970,6 +972,19 @@ export function StudyAssistant({
 
   function deleteHistoryEntry(entry: AssistantHistoryEntry) {
     updateHistory(history.filter((item) => item.id !== entry.id));
+  }
+
+  function openFloatingSource(context: RagContext) {
+    setFloatingSources((current) => current.some((item) => item.context.id === context.id)
+      ? current
+      : [...current, { context, x: 120 + current.length * 24, y: 120 + current.length * 24, minimized: false }]);
+  }
+
+  async function askFollowUp() {
+    if (!activeTurn || !followUp.trim()) return;
+    const next = `${followUp.trim()}\n\n[Continuación de la conversación. Consulta anterior: ${activeTurn.query}\nRespuesta anterior: ${activeTurn.answer.slice(0, 4000)}]`;
+    setFollowUp("");
+    await ask(next, "Continuación de la conversación");
   }
 
   async function ask(customQuery?: string, taskLabel = "Consulta académica") {
@@ -1490,6 +1505,24 @@ export function StudyAssistant({
                 })}
               </div>
 
+              <div className="assistant-followup">
+                <textarea
+                  value={followUp}
+                  onChange={(event) => setFollowUp(event.target.value)}
+                  placeholder="Continúa la conversación sobre esta respuesta…"
+                  rows={2}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" && !event.shiftKey) {
+                      event.preventDefault();
+                      void askFollowUp();
+                    }
+                  }}
+                />
+                <button type="button" className="primary-button" onClick={() => void askFollowUp()} disabled={busy || !followUp.trim()}>
+                  Continuar consulta
+                </button>
+              </div>
+
               {turns.length > 1 && (
                 <div className="assistant-history-bar">
                   <span>Consultas de esta sesión ({turns.length}):</span>
@@ -1550,6 +1583,9 @@ export function StudyAssistant({
                 <p>{context.text}</p>
                 <div className="rag-context-footer">
                   <code>{context.resourceId}</code>
+                  <button type="button" className="secondary-button" onClick={() => openFloatingSource(context)}>
+                    Abrir flotante
+                  </button>
                   <button
                     type="button"
                     className="secondary-button"
@@ -1570,6 +1606,46 @@ export function StudyAssistant({
           </div>
         </aside>
       </div>
+      {floatingSources.map((item, index) => (
+        <div
+          key={item.context.id}
+          className={`assistant-floating-source${item.minimized ? " minimized" : ""}`}
+          style={{ left: item.x, top: item.y, zIndex: 2050 + index }}
+        >
+          <header
+            onPointerDown={(event) => {
+              const startX = event.clientX - item.x;
+              const startY = event.clientY - item.y;
+              const move = (moveEvent: PointerEvent) => {
+                setFloatingSources((current) => current.map((source) => source.context.id === item.context.id
+                  ? { ...source, x: Math.max(8, moveEvent.clientX - startX), y: Math.max(8, moveEvent.clientY - startY) }
+                  : source));
+              };
+              const up = () => {
+                window.removeEventListener("pointermove", move);
+                window.removeEventListener("pointerup", up);
+              };
+              window.addEventListener("pointermove", move);
+              window.addEventListener("pointerup", up);
+            }}
+          >
+            <strong>{item.context.resourceTitle}</strong>
+            <span>{item.context.label}</span>
+            <button type="button" onClick={() => setFloatingSources((current) => current.map((source) => source.context.id === item.context.id ? { ...source, minimized: !source.minimized } : source))}>−</button>
+            <button type="button" onClick={() => setFloatingSources((current) => current.filter((source) => source.context.id !== item.context.id))}>×</button>
+          </header>
+          {!item.minimized && (
+            <div className="assistant-floating-body">
+              <p>{item.context.text}</p>
+              <div>
+                <code>{item.context.resourceId}</code>
+                <button type="button" className="secondary-button" onClick={() => onOpenContext(item.context)}>Abrir en el lector →</button>
+              </div>
+            </div>
+          )}
+        </div>
+      ))}
+
       {historyOpen && (
         <aside className="assistant-history-drawer" aria-label="Historial de consultas">
           <header>
