@@ -36,6 +36,7 @@ interface SearchHit {
 }
 
 interface StudyAssistantProps {
+  embedded?: boolean;
   initialQuestion?: string;
   onClose: () => void;
   onOpenContext: (context: RagContext) => void;
@@ -474,6 +475,7 @@ function buildHarvardLocalSynthesis(
 }
 
 export function StudyAssistant({
+  embedded = false,
   initialQuestion = "",
   onClose,
   onOpenContext,
@@ -1080,7 +1082,7 @@ export function StudyAssistant({
 
   return (
     <section
-      className={`assistant-workspace assistant-mode-${assistantMode}`}
+      className={`assistant-workspace assistant-mode-${assistantMode}${embedded ? " embedded" : ""}`}
       aria-label="Asistente de estudio e investigación académica"
       style={
         {
