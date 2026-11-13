@@ -12,6 +12,7 @@ import CanvasModuleMenu from "../CanvasModuleMenu";
 import {
   PaneView,
   makePane,
+  TYPE_LABEL,
   type BookInfo,
   type PaneNode,
   type Reference,
@@ -86,8 +87,25 @@ function PaneHost({
     setPane((current) => updater(current));
   }
 
+  const activeResource = context.resources.find((resource) => resource.id === pane.state.resourceId);
+  const identityTitle = activeResource?.title
+    ?? (pane.state.resourceId || TYPE_LABEL[pane.resourceType as keyof typeof TYPE_LABEL] || "Panel");
+  const identityAbbreviation = activeResource?.abbreviation || TYPE_LABEL[pane.resourceType as keyof typeof TYPE_LABEL] || "";
+  const identityKind = activeResource?.kind ?? pane.resourceType;
+
   return (
     <div className={`dock-panel-host pane-appearance-${pane.state.appearance ?? "inherit"}`}>
+      <div className="dock-pane-identity">
+        <span className={`dock-pane-identity-icon ${identityKind}`} aria-hidden="true">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+            <path d={identityKind === "bible" ? "M5 5.5A2.5 2.5 0 0 1 7.5 3H20v16H7.5A2.5 2.5 0 0 0 5 21.5zM9 7h7M9 11h5" : identityKind === "commentary" ? "M4 5h16v14H4zM8 9h8M8 13h5" : "M12 3l1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9l4.4-1.6z"} stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </span>
+        <div className="dock-pane-identity-copy">
+          <strong>{identityTitle}</strong>
+          <small>{identityAbbreviation}{identityKind ? ` · ${identityKind}` : ""}</small>
+        </div>
+      </div>
       <div className="dock-pane-controls">
         <button
           type="button"
@@ -273,7 +291,7 @@ export default function DockWorkspaceCore({
     api.addPanel({
       id: pane.id,
       component: "pane",
-      title: resource.abbreviation || resource.title,
+      title: resource.title || resource.abbreviation,
       params: { pane },
       ...(active ? { position: { referencePanel: active.id, direction: "within" } } : {}),
     });

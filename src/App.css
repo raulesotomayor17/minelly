@@ -16893,3 +16893,22 @@ html:is([data-theme="white"],[data-theme="warm"],[data-theme="terracotta"],[data
 .pane-appearance-sepia .mod-verse-number { color: var(--accent) !important; }
 .pane-appearance-light .mod-verse:hover,
 .pane-appearance-sepia .mod-verse:hover { background: rgba(15, 23, 42, .045) !important; }
+
+/* Identidad del recurso en la cabecera del panel */
+.dock-pane-identity { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-bottom: 1px solid var(--border-soft); background: var(--bg-card); }
+.dock-pane-identity-icon { display: grid; place-items: center; width: 26px; height: 26px; flex: 0 0 26px; border: 1px solid var(--border-soft); border-radius: 7px; color: var(--accent); background: var(--bg-input); }
+.dock-pane-identity-icon.bible { color: #60a5fa; }
+.dock-pane-identity-icon.commentary { color: #fbbf24; }
+.dock-pane-identity-icon.dictionary { color: #34d399; }
+.dock-pane-identity-copy { display: grid; gap: 1px; min-width: 0; }
+.dock-pane-identity-copy strong { overflow: hidden; color: var(--text-primary); font-family: var(--serif); font-size: 12px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.dock-pane-identity-copy small { color: var(--text-muted); font-size: 8.5px; letter-spacing: .04em; text-transform: uppercase; }
+.pane-appearance-light, .pane-appearance-sepia { color-scheme: light; }
+.pane-appearance-dark, .pane-appearance-contrast { color-scheme: dark; }
+.pane-appearance-light :is(.mod-passage-controls select, .mod-passage-controls input),
+.pane-appearance-sepia :is(.mod-passage-controls select, .mod-passage-controls input) {
+  color-scheme: light !important;
+  background: var(--bg-input) !important;
+  color: var(--text-primary) !important;
+}
+.pane-appearance-light .mod-passage-controls option, .pane-appearance-sepia .mod-passage-controls option { color: #111827; background: #ffffff; }
