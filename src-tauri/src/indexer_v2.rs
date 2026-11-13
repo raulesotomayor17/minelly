@@ -138,6 +138,17 @@ pub fn rebuild_aux_indexes(conn: &Connection) -> Result<()> {
             sync_sermon_fts(conn, &id)?;
         }
     }
+    // No reconstruir rangos en cada arranque: con decenas de miles de filas
+    // el setup bloqueaba la ventana durante minutos.
+    let rtree_count: i64 = conn.query_row("SELECT count(*) FROM passage_ranges_rtree", [], |row| row.get(0))?;
+    let link_count: i64 = conn.query_row("SELECT count(*) FROM passage_range_links", [], |row| row.get(0))?;
+    let invalid_ranges: i64 = conn.query_row(
+        "SELECT count(*) FROM passage_ranges_rtree WHERE start_verse_code>end_verse_code",
+        [], |row| row.get(0),
+    )?;
+    if rtree_count > 0 && rtree_count == link_count && invalid_ranges == 0 {
+        return Ok(());
+    }
     rebuild_passage_ranges(conn)?;
     Ok(())
 }
