@@ -2218,6 +2218,14 @@ function App() {
     return () => document.removeEventListener("mousedown", onPointer);
   }, [selectionMenu, contextMenu]);
 
+  function openModuleFromCanvas(module: "compare" | "ereader" | "assistant" | "notes" | "sermons") {
+    if (module === "compare") setShowCompare(true);
+    if (module === "ereader") { setEreaderPath(""); setEreaderTitle(""); setShowEreader(true); }
+    if (module === "assistant") setShowAssistant(true);
+    if (module === "notes") setShowNotes(true);
+    if (module === "sermons") setShowSermons(true);
+  }
+
   function openRagContext(context: RagContext) {
     if (context.kind === "bible") {
       applyPreferredBible();
@@ -7379,6 +7387,7 @@ function App() {
               studyFont={studyFont}
               readerScale={fontScale}
               studyScale={studyFontScale}
+              onOpenModule={openModuleFromCanvas}
               onExit={() => setShowModular(false)}
             />
           ) : (
@@ -7394,6 +7403,7 @@ function App() {
               readerScale={fontScale}
               studyScale={studyFontScale}
               onOpenCustomization={() => setShowCustomization(true)}
+              onOpenModule={openModuleFromCanvas}
               onExit={() => {
                 setShowModular(false);
                 setModularPreset(undefined);
