@@ -16646,3 +16646,43 @@ html:is([data-theme="white"],[data-theme="warm"],[data-theme="terracotta"],[data
 
 .mod-compare-base-select { display: flex; align-items: center; gap: 5px; margin: 5px 0; color: var(--text-secondary); font-size: 10px; }
 .mod-compare-base-select select { max-width: 260px; height: 26px; padding: 0 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-input); color: var(--text-primary); }
+
+/* Cadena definitiva de altura para paneles dockview */
+.dock-panel-host {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+.dock-pane-controls { flex: 0 0 auto; }
+.dock-pane-scaled {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+.dock-pane-scaled > .mod-pane {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.mod-pane-body {
+  flex: 1 1 auto;
+  min-height: 0 !important;
+  overflow: auto !important;
+}
+.mod-compare-picker { margin: 4px 0; }
+.mod-compare-picker-toggle {
+  width: 100%;
+  padding: 4px 7px;
+  border: 1px solid var(--border-soft);
+  border-radius: 5px;
+  background: var(--bg-input);
+  color: var(--text-primary);
+  text-align: left;
+  font-size: 10px;
+  cursor: pointer;
+}
+.mod-compare-picker .mod-compare-base-select,
+.mod-compare-picker .mod-compare-version-pills { margin-top: 5px; }
