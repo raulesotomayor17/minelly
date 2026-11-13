@@ -8,6 +8,8 @@ import NotesWorkspace from "./NotesWorkspace";
 import StudyAssistant, { type RagContext } from "./StudyAssistant";
 import EreaderWorkspace from "./EreaderWorkspace";
 import ResourceEmblem from "./ResourceEmblem";
+import ProfileModal from "./ProfileModal";
+import { loadProfile, type UserProfile } from "./profile";
 import WordStudyPanel from "./WordStudyPanel";
 import Dashboard from "./Dashboard";
 import FormationWorkspace, { type FormationTab } from "./FormationWorkspace";
@@ -601,6 +603,8 @@ function App() {
   const [showCustomization, setShowCustomization] = useState(false);
   const [showAssistant, setShowAssistant] = useState(false);
   const [showEreader, setShowEreader] = useState(false);
+  const [profile, setProfile] = useState<UserProfile>(() => loadProfile());
+  const [showProfile, setShowProfile] = useState(false);
   const [ereaderPath, setEreaderPath] = useState("");
   const [ereaderTitle, setEreaderTitle] = useState("");
   const [language, setLanguage] = useState<Language>(() => {
@@ -4196,6 +4200,8 @@ function App() {
             currentChapter={chapter}
             currentVerse={activeVerse}
             readingPercent={readingProgressMap["bible:canonical"]?.overallPercent ?? 0}
+            profile={profile}
+            onOpenProfile={() => setShowProfile(true)}
             bibleCount={bibles.length}
             commentaryCount={commentaryResources.length}
             bookCount={libraryBooks.length}
@@ -7460,6 +7466,14 @@ function App() {
             resource={citationInfoTarget}
             onClose={() => setCitationInfoTarget(null)}
             onSave={saveCitationInfo}
+          />
+        )}
+
+        {showProfile && (
+          <ProfileModal
+            profile={profile}
+            onClose={() => setShowProfile(false)}
+            onSave={(next) => { setProfile(next); setStatus(next.name ? `Perfil guardado: ${next.name}` : "Perfil actualizado."); }}
           />
         )}
 
