@@ -6,6 +6,7 @@ import ModularWorkspace from "./ModularWorkspace";
 import PersonalBookBuilder from "./PersonalBookBuilder";
 import NotesWorkspace from "./NotesWorkspace";
 import StudyAssistant, { type RagContext } from "./StudyAssistant";
+import EreaderWorkspace from "./EreaderWorkspace";
 import WordStudyPanel from "./WordStudyPanel";
 import Dashboard from "./Dashboard";
 import FormationWorkspace, { type FormationTab } from "./FormationWorkspace";
@@ -598,6 +599,9 @@ function App() {
   const [showNotes, setShowNotes] = useState(false);
   const [showCustomization, setShowCustomization] = useState(false);
   const [showAssistant, setShowAssistant] = useState(false);
+  const [showEreader, setShowEreader] = useState(false);
+  const [ereaderPath, setEreaderPath] = useState("");
+  const [ereaderTitle, setEreaderTitle] = useState("");
   const [language, setLanguage] = useState<Language>(() => {
     const stored = localStorage.getItem(LANGUAGE_KEY);
     return stored === "en" ? "en" : "es";
@@ -3759,6 +3763,18 @@ function App() {
             <span>{tr("Lienzo", "Canvas")}</span>
           </button>
           <button
+            className={showEreader ? "nav-item active" : "nav-item"}
+            onClick={() => {
+              setEreaderPath("");
+              setEreaderTitle("");
+              setShowEreader(true);
+            }}
+            title="eReader: lector independiente de EPUB/MOBI/AZW3/FB2"
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5zM8 7h8M8 11h6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg>
+            <span>eReader</span>
+          </button>
+          <button
             className={showPbb ? "nav-item active" : "nav-item"}
             onClick={() => setShowPbb(true)}
           >
@@ -4357,6 +4373,21 @@ function App() {
                       </div>
                     )}
                     <div className="resource-card-actions">
+                      {resource.kind === "book" && /\.(epub|mobi|azw3|fb2)$/i.test(resource.sourcePath) && (
+                        <button
+                          type="button"
+                          className="card-citation"
+                          title="Abrir en eReader"
+                          aria-label="Abrir en eReader"
+                          onClick={() => {
+                            setEreaderPath(resource.sourcePath);
+                            setEreaderTitle(resource.title);
+                            setShowEreader(true);
+                          }}
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5zM8 7h8M8 11h6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>
+                        </button>
+                      )}
                       <button
                         type="button"
                         className="card-citation"
@@ -7297,6 +7328,15 @@ function App() {
           <FormationWorkspace
             initialTab={formationTab}
             onClose={() => setFormationTab(null)}
+          />
+        )}
+
+        {showEreader && (
+          <EreaderWorkspace
+            initialPath={ereaderPath}
+            initialTitle={ereaderTitle}
+            onClose={() => setShowEreader(false)}
+            onOpenScripture={(refBook, refChapter, refVerse, label, x, y) => void openScriptureRefPreview(refBook, refChapter, refVerse, refVerse, label, x, y)}
           />
         )}
 

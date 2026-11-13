@@ -16512,3 +16512,22 @@ html:is([data-theme="white"],[data-theme="warm"],[data-theme="terracotta"],[data
 .assistant-floating-body p { margin: 0 0 8px; color: var(--text-secondary); font-size: 11px; line-height: 1.55; white-space: pre-wrap; }
 .assistant-floating-body > div { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .assistant-floating-body code { color: var(--text-muted); font-size: 9px; }
+
+.ereader-workspace { position: fixed; inset: 0; z-index: 2100; display: flex; flex-direction: column; background: var(--bg-canvas); color: var(--text-primary); }
+.ereader-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; padding: 7px 12px; border-bottom: 1px solid var(--border); background: var(--bg-shell); }
+.ereader-toolbar h1 { margin: 1px 0; font-family: var(--serif); font-size: 17px; }
+.ereader-actions { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.ereader-actions button, .ereader-actions select { height: 28px; padding: 0 7px; border: 1px solid var(--border); border-radius: 5px; background: var(--bg-input); color: var(--text-primary); font-size: 11px; cursor: pointer; }
+.ereader-body { flex: 1; min-height: 0; display: flex; overflow: hidden; }
+.ereader-toc { width: 270px; overflow: auto; padding: 8px; border-right: 1px solid var(--border); background: var(--bg-card); }
+.ereader-toc strong { display: block; padding: 5px; font-family: var(--serif); }
+.ereader-toc button { display: block; width: 100%; padding: 4px 6px; border: 0; border-radius: 3px; background: transparent; color: var(--text-primary); font-size: 11px; text-align: left; cursor: pointer; }
+.ereader-toc button:hover { background: var(--accent-soft); color: var(--accent); }
+.ereader-view { flex: 1; min-width: 0; height: 100%; overflow: hidden; font-family: var(--ereader-font); font-size: calc(16px * var(--ereader-scale)); }
+.ereader-view foliate-view { display: block; width: 100%; height: 100%; }
+.ereader-footer { display: flex; align-items: center; gap: 8px; padding: 5px 12px; border-top: 1px solid var(--border); background: var(--bg-shell); color: var(--text-secondary); font-size: 10px; }
+.ereader-footer progress { flex: 1; height: 5px; }
+.ereader-error { color: var(--danger); }
+.ereader-body.theme-light { background: #fff; color: #111; }
+.ereader-body.theme-sepia { background: #f4ecd8; color: #2b2118; }
+.ereader-body.theme-dark { background: #111827; color: #f9fafb; }
