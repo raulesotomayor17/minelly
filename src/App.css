@@ -16550,3 +16550,6 @@ html:is([data-theme="white"],[data-theme="warm"],[data-theme="terracotta"],[data
 .ereader-highlight-row { display: flex; align-items: center; gap: 3px; padding: 3px 0; }
 .ereader-highlight-row i { width: 11px; height: 11px; border-radius: 2px; display: inline-block; }
 .ereader-highlight-row button { flex: 1; font-size: 9px; }
+
+.ereader-workspace foliate-view { display: block !important; width: 100% !important; height: 100% !important; min-height: 0; background: #fff; }
+.ereader-workspace.embedded .ereader-view { min-height: 260px; }
