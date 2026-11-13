@@ -16479,3 +16479,18 @@ html:is([data-theme="white"],[data-theme="warm"],[data-theme="terracotta"],[data
 .toc-outline-row > .toc-item { flex: 1; }
 .toc-outline-row .toc-row-actions { opacity: 0; }
 .toc-outline-row:hover .toc-row-actions, .toc-outline-row:focus-within .toc-row-actions { opacity: 1; }
+
+.assistant-history-drawer { position: fixed; top: 0; right: 0; z-index: 2000; width: min(420px,92vw); height: 100vh; overflow: auto; padding: 14px; border-left: 1px solid var(--border); background: var(--bg-card); color: var(--text-primary); box-shadow: -18px 0 50px rgba(0,0,0,.35); }
+.assistant-history-drawer > header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.assistant-history-drawer > header button { border: 0; background: transparent; color: var(--text-primary); font-size: 22px; cursor: pointer; }
+.assistant-history-drawer article { display: grid; gap: 4px; padding: 9px; margin-bottom: 7px; border: 1px solid var(--border); border-radius: 7px; background: var(--bg-input); }
+.assistant-history-drawer article > div { display: flex; gap: 4px; flex-wrap: wrap; }
+.assistant-history-drawer small { color: var(--text-muted); font-size: 10px; }
+.assistant-history-drawer p { margin: 2px 0; color: var(--text-secondary); font-size: 11px; }
+.assistant-history-drawer button { padding: 3px 7px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-card); color: var(--text-primary); cursor: pointer; }
+.assistant-help summary { padding: 8px 10px; cursor: pointer; color: var(--text-secondary); font-size: 11px; }
+.assistant-help p { margin: 0; padding: 0 10px 9px; color: var(--text-muted); font-size: 10px; line-height: 1.45; }
+.assistant-attribution { margin: 4px 0; padding: 7px 9px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); }
+.assistant-attribution strong { font-size: 10px; color: var(--text-secondary); }
+.assistant-attribution div { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.assistant-attribution span { padding: 2px 5px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-size: 9px; }
