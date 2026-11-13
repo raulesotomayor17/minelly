@@ -164,8 +164,15 @@ pub fn rebuild_passage_ranges(conn: &Connection) -> Result<()> {
     })?;
     for row in rows {
         let (rowid, resource, book, ch1, v1, ch2, v2, html) = row?;
-        let start = verse_code(book, ch1, v1);
-        let end = verse_code(book, ch2, v2.max(v1));
+        let start_code = verse_code(book, ch1, v1);
+        let end_code = verse_code(book, ch2, v2.max(v1));
+        // Algunos comentarios importados traen chapter_end < chapter_start.
+        // RTree exige start <= end; normalizamos sin perder el texto original.
+        let (start, end) = if start_code <= end_code {
+            (start_code, end_code)
+        } else {
+            (end_code, start_code)
+        };
         let label = format!("{} {}:{}–{}:{}", osis_code(book), ch1, v1, ch2, v2);
         let snippet = strip_html(&html).chars().take(260).collect::<String>();
         conn.execute(
