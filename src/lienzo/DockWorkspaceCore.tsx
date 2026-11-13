@@ -67,7 +67,7 @@ function PaneHost({
         detail.sourceId !== pane.id &&
         detail.linkSet !== "none" &&
         detail.linkSet === pane.linkSet &&
-        ["bible", "commentary", "interlinear", "compare"].includes(
+        ["bible", "commentary", "interlinear", "compare", "book", "notes"].includes(
           pane.resourceType,
         )
       ) {
@@ -98,6 +98,25 @@ function PaneHost({
           onClick={() => change((current) => ({ ...current, state: { ...current.state, fontScale: Math.min(1.8, (current.state.fontScale ?? 1) + 0.1) } }))}
           title="Aumentar letra del panel"
         >A+</button>
+        <div className="dock-link-set-picker" role="group" aria-label="Grupo de enlace A–F">
+          {(["none", "A", "B", "C", "D", "E", "F"] as const).map((set) => (
+            <button
+              key={set}
+              type="button"
+              className={pane.linkSet === set ? "active" : ""}
+              data-link={set}
+              title={set === "none" ? "Sin enlace" : `Grupo de enlace ${set}`}
+              onClick={() => {
+                change((current) => ({ ...current, linkSet: set }));
+                window.dispatchEvent(new CustomEvent("teo-dock-link", {
+                  detail: { sourceId: pane.id, linkSet: set, reference: pane.state.reference },
+                }));
+              }}
+            >
+              {set === "none" ? "—" : set}
+            </button>
+          ))}
+        </div>
         <select
           value={pane.state.appearance ?? "inherit"}
           onChange={(event) => change((current) => ({ ...current, state: { ...current.state, appearance: event.target.value as typeof current.state.appearance } }))}

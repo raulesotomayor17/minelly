@@ -16598,3 +16598,9 @@ html:is([data-theme="white"],[data-theme="warm"],[data-theme="terracotta"],[data
 }
 .mod-pane-body > .ereader-workspace.embedded .ereader-body { min-height: 0; flex: 1 1 auto; }
 .mod-pane-body > .ereader-workspace.embedded .ereader-view { min-height: 0; height: auto; flex: 1 1 auto; }
+
+.dock-link-set-picker { display: inline-flex; align-items: center; gap: 1px; margin-left: 3px; padding: 1px; border: 1px solid var(--border-soft); border-radius: 5px; background: var(--bg-input); }
+.dock-link-set-picker button { min-width: 20px; height: 21px; padding: 0 4px; border: 0; border-radius: 3px; background: transparent; color: var(--text-secondary); font-size: 9px; font-weight: 700; cursor: pointer; }
+.dock-link-set-picker button:hover { color: var(--accent); }
+.dock-link-set-picker button.active { background: var(--accent); color: #fff; }
+.dock-link-set-picker button[data-link="none"].active { background: var(--border-strong); color: var(--text-primary); }
