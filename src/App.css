@@ -17047,3 +17047,21 @@ html:is([data-theme="white"],[data-theme="warm"],[data-theme="terracotta"],[data
 .bible-version-check { color: var(--accent); font-size: 12px; }
 .bible-version-empty { margin: 8px; color: var(--text-muted); font-size: 10px; }
 @media (max-width: 900px) { .bible-version-picker { min-width: 132px; } .bible-version-menu { width: 320px; } }
+
+/* Editor de fotografía tipo red social */
+.avatar-crop-modal { padding: 14px; }
+.avatar-cropper { display: grid; gap: 10px; }
+.avatar-cropper header { display: flex; justify-content: space-between; align-items: flex-start; }
+.avatar-cropper h3 { margin: 2px 0 0; font-family: var(--serif); font-size: 21px; }
+.avatar-cropper header > button { border: 0; background: transparent; color: var(--text-primary); font-size: 22px; cursor: pointer; }
+.avatar-crop-stage { position: relative; width: 268px; height: 268px; margin: 0 auto; overflow: hidden; border: 1px solid var(--border-soft); border-radius: 14px; background: #0b0f14; cursor: grab; touch-action: none; user-select: none; }
+.avatar-crop-stage:active { cursor: grabbing; }
+.avatar-crop-stage img { position: absolute; max-width: none; transform: translate(-50%, -50%); pointer-events: none; user-select: none; }
+.avatar-crop-mask { position: absolute; inset: 0; border-radius: 14px; background: radial-gradient(circle at center, transparent 0 48%, rgba(0,0,0,.58) 48.5%); box-shadow: inset 0 0 0 1px rgba(255,255,255,.06); pointer-events: none; }
+.avatar-crop-mask::after { content: ""; position: absolute; left: 50%; top: 50%; width: 238px; height: 238px; transform: translate(-50%,-50%); border: 1px solid rgba(255,255,255,.72); border-radius: 50%; box-shadow: 0 0 0 999px rgba(0,0,0,.08); }
+.avatar-crop-hint { margin: 0; color: var(--text-muted); font-size: 10px; text-align: center; }
+.avatar-zoom { display: flex; align-items: center; gap: 8px; color: var(--text-secondary); font-size: 10px; }
+.avatar-zoom input { flex: 1; accent-color: var(--accent); }
+.avatar-zoom strong { min-width: 34px; color: var(--text-primary); font-size: 10px; text-align: right; }
+.avatar-cropper footer { display: flex; align-items: center; gap: 6px; }
+.avatar-cropper footer span { flex: 1; }
