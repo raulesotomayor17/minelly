@@ -64,7 +64,7 @@ export default function EreaderWorkspace({ embedded = false, initialPath, initia
     let style = doc.getElementById("minelly-ereader-style") as HTMLStyleElement | null;
     if (!style) { style = doc.createElement("style"); style.id = "minelly-ereader-style"; doc.head.appendChild(style); }
     const basePx = Math.round(17 * fontSize);
-    style.textContent = `html,body{background:${bg}!important;color:${fg}!important;} html{font-size:${basePx}px!important;} body{font-family:${getComputedStyle(document.documentElement).getPropertyValue("--ereader-font") || "Georgia, serif"}!important;font-size:1rem!important;line-height:1.65!important;padding:0 3%!important;} body p,body li,body div,body blockquote,body td,body th{font-size:1rem!important;line-height:1.65!important;} h1{font-size:1.8rem!important;} h2{font-size:1.45rem!important;} h3{font-size:1.2rem!important;} h4{font-size:1.05rem!important;} a{color:inherit!important;}`;
+    style.textContent = `html,body{background:${bg}!important;color:${fg}!important;} html{font-size:${basePx}px!important;} body{font-family:${getComputedStyle(document.documentElement).getPropertyValue("--ereader-font") || "Georgia, serif"}!important;font-size:1rem!important;line-height:1.65!important;padding:0 3%!important;} body p,body li,body div,body blockquote,body td,body th{font-size:1rem!important;line-height:1.65!important;} h1{font-size:1.8rem!important;} h2{font-size:1.45rem!important;} h3{font-size:1.2rem!important;} h4{font-size:1.05rem!important;} a{color:inherit!important;} a.scripture-ref-link{color:#1d6fd8!important;text-decoration:underline!important;cursor:pointer!important;}`;
     doc.documentElement.style.background = bg;
     doc.body.style.color = fg;
   }
@@ -153,7 +153,12 @@ export default function EreaderWorkspace({ embedded = false, initialPath, initia
         setHighlights(allHighlights[filePath] ?? []);
       } catch { setBookmarks([]); setNotes([]); }
       const saved = storedLocations[filePath];
-      if (saved?.cfi) await view.goTo(saved.cfi);
+      if (saved?.cfi && (saved.fraction ?? 0) < 0.95) {
+        await view.goTo(saved.cfi);
+      } else {
+        await view.goToTextStart?.();
+      }
+      requestAnimationFrame(() => view.renderer?.expand?.());
     } catch (err) {
       setError(String(err));
     }

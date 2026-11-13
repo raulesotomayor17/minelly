@@ -7,6 +7,7 @@ declare module "*/foliate-js/view.js" {
     next(): Promise<void>;
     prev(): Promise<void>;
     close(): void;
+    goToTextStart(): Promise<void>;
     resolveCFI(cfi: string): any;
     addAnnotation(annotation: any): Promise<any>;
     getCFI(index: number, range: Range): string;
