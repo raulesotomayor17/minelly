@@ -4,6 +4,7 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { processBookChapterHtml } from "./bookProcessor";
 import { flattenToc } from "./vendor/foliate-js/toc.js";
+import { Overlayer } from "./vendor/foliate-js/overlayer.js";
 
 interface Props {
   initialPath?: string;
@@ -33,6 +34,7 @@ export default function EreaderWorkspace({ initialPath, initialTitle, onClose, o
   const selectionRangeRef = useRef<Range | null>(null);
   const currentLocationRef = useRef<{ cfi?: string; fraction?: number }>({});
   const [fullscreen, setFullscreen] = useState(false);
+  const [highlights, setHighlights] = useState<Array<{ cfi: string; color: string }>>([]);
 
   const storedLocations = useMemo<Record<string, StoredLocation>>(() => {
     try { return JSON.parse(localStorage.getItem("minelly.ereader-locations.v1") ?? "{}"); } catch { return {}; }
@@ -92,6 +94,18 @@ export default function EreaderWorkspace({ initialPath, initialTitle, onClose, o
         stored[filePath] = { cfi: detail.cfi, fraction: detail.fraction, title: displayTitle || name };
         localStorage.setItem("minelly.ereader-locations.v1", JSON.stringify(stored));
       });
+      view.addEventListener("create-overlay", (event: any) => {
+        const index = Number(event.detail?.index ?? -1);
+        const all = JSON.parse(localStorage.getItem("minelly.ereader-highlights.v1") ?? "{}");
+        const visual = all[filePath] ?? [];
+        for (const highlight of visual) {
+          const resolved = view.resolveCFI?.(highlight.cfi);
+          if (resolved?.index === index) void view.addAnnotation({ value: highlight.cfi, color: highlight.color });
+        }
+      });
+      view.addEventListener("draw-annotation", (event: any) => {
+        event.detail.draw(Overlayer.highlight, { color: event.detail.annotation?.color ?? "#f5d36b" });
+      });
       await view.open(book);
       document.title = displayTitle || book.metadata?.title || name;
       setTitle(displayTitle || book.metadata?.title || name);
@@ -102,6 +116,8 @@ export default function EreaderWorkspace({ initialPath, initialTitle, onClose, o
         setBookmarks(all[filePath] ?? []);
         const allNotes = JSON.parse(localStorage.getItem("minelly.ereader-notes.v1") ?? "{}");
         setNotes(allNotes[filePath] ?? []);
+        const allHighlights = JSON.parse(localStorage.getItem("minelly.ereader-highlights.v1") ?? "{}");
+        setHighlights(allHighlights[filePath] ?? []);
       } catch { setBookmarks([]); setNotes([]); }
       const saved = storedLocations[filePath];
       if (saved?.cfi) await view.goTo(saved.cfi);
@@ -148,15 +164,22 @@ export default function EreaderWorkspace({ initialPath, initialTitle, onClose, o
 
   function highlightSelection() {
     const range = selectionRangeRef.current;
-    if (!range) return;
+    const view = viewRef.current;
+    if (!range || !view) return;
     try {
-      const mark = document.createElement("mark");
-      mark.className = "ereader-highlight";
-      mark.style.background = "#f5d36b";
-      mark.style.color = "inherit";
-      range.surroundContents(mark);
+      const contents = view.renderer.getContents();
+      const content = contents.find((item: any) => item.doc === range.startContainer.ownerDocument) ?? contents[0];
+      if (!content) return;
+      const cfi = view.getCFI(content.index, range);
+      const highlight = { cfi, color: "#f5d36b" };
+      const next = [...highlights, highlight];
+      setHighlights(next);
+      const all = JSON.parse(localStorage.getItem("minelly.ereader-highlights.v1") ?? "{}");
+      all[currentPath || "externo"] = next;
+      localStorage.setItem("minelly.ereader-highlights.v1", JSON.stringify(all));
+      void view.addAnnotation({ value: cfi, color: highlight.color });
       setSelection(null);
-    } catch { setError("No se pudo resaltar una selección que cruza varios bloques."); }
+    } catch (error) { setError(String(error)); }
   }
 
   async function toggleFullscreen() {
