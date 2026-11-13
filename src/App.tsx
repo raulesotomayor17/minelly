@@ -7,6 +7,7 @@ import PersonalBookBuilder from "./PersonalBookBuilder";
 import NotesWorkspace from "./NotesWorkspace";
 import StudyAssistant, { type RagContext } from "./StudyAssistant";
 import EreaderWorkspace from "./EreaderWorkspace";
+import ResourceEmblem from "./ResourceEmblem";
 import WordStudyPanel from "./WordStudyPanel";
 import Dashboard from "./Dashboard";
 import FormationWorkspace, { type FormationTab } from "./FormationWorkspace";
@@ -4355,9 +4356,13 @@ function App() {
                       onClick={() => openResource(resource)}
                     >
                       <div className={`card-spine ${resource.kind}`} />
+                      <span className={`card-emblem ${resource.kind}`} aria-hidden="true"><ResourceEmblem kind={resource.kind} /></span>
                       <div className="card-body">
-                        <span className="card-kind">{KIND_LABEL[resource.kind]}</span>
-                        <strong>{resource.title}</strong>
+                        <div className="card-topline">
+                          <span className="card-kind">{KIND_LABEL[resource.kind]}</span>
+                          <span className="card-format">{resource.sourceFormat || "LOCAL"}</span>
+                        </div>
+                        <strong className="card-title">{resource.title}</strong>
                         <span className="card-abbrev">
                           {resource.abbreviation || resource.sourceFormat}
                         </span>
