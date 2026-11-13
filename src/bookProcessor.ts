@@ -116,6 +116,19 @@ const BOOK_ALIASES: { book: number; canonical: string; aliases: string[] }[] = [
   { book: 66, canonical: "Apocalipsis", aliases: ["apocalipsis", "apoc", "ap", "rv", "rev"] },
 ];
 
+
+const ENGLISH_ALIASES: Record<number, string[]> = {
+  1:["gen","ge","genesis"],2:["exod","exo","exodus"],3:["lev","le","leviticus"],4:["num","nu","numb","numbers"],5:["deut","de","deuteronomy"],
+  6:["josh","jsh","joshua"],7:["judg","jdg","jg","jdgs","judges"],8:["ruth","ru","rth"],9:["1 sam","1 sm","1 sa","1 s","i sam","1 samuel"],10:["2 sam","2 sm","2 sa","2 s","ii sam","2 samuel"],
+  11:["1 kgs","1 ki","1 k","1 kings","i kgs","i kings"],12:["2 kgs","2 ki","2 k","2 kings","ii kgs","ii kings"],13:["1 chr","1 ch","1 chron","1 chronicles"],14:["2 chr","2 ch","2 chron","2 chronicles"],
+  15:["ezra","ezr"],16:["neh","ne","nehemiah"],17:["esth","est","es","esther"],18:["job","jb"],19:["ps","pss","psa","psalm","psalms"],20:["prov","prv","proverbs"],21:["eccl","ecc","qoh","qo","ecclesiastes"],22:["song","sos","sg","canticles","song of songs"],
+  23:["isa","is","isaiah"],24:["jer","je","jr","jeremiah"],25:["lam","la","lamentations"],26:["ezek","eze","ezk","ezekiel"],27:["dan","da","dn","daniel"],28:["hos","ho","hosea"],29:["joel","jl"],30:["amos","am"],31:["obad","ob","oba","obadiah"],32:["jonah","jon","jnh"],33:["mic","mi","micah"],34:["nah","na","nahum"],35:["hab","hb","habakkuk"],36:["zeph","zep","zp","zephaniah"],37:["hag","hg","haggai"],38:["zech","zec","zc","zechariah"],39:["mal","ml","malachi"],
+  40:["matt","mat","matthew"],41:["mark","mk","mrk","mr"],42:["luke","lk","lu"],43:["john","jhn"],44:["acts","ac","act"],45:["rom","ro","rm","romans"],46:["1 cor","1 co","1 corinthians"],47:["2 cor","2 co","2 corinthians"],48:["gal","ga","galatians"],49:["eph","ep","ephesians"],50:["phil","php","pp","philippians"],51:["col","colossians"],52:["1 thess","1 th","1 thessalonians"],53:["2 thess","2 th","2 thessalonians"],54:["1 tim","1 ti","1 timothy"],55:["2 tim","2 ti","2 timothy"],56:["titus","tit","ti"],57:["phlm","phm","philemon"],58:["heb","he","hebrews"],59:["jas","jm","james"],60:["1 pet","1 pe","1 pt","1 p","1 peter"],61:["2 pet","2 pe","2 pt","2 p","2 peter"],62:["1 john","1 jn","1 jhn"],63:["2 john","2 jn","2 jhn"],64:["3 john","3 jn","3 jhn"],65:["jude","jud"],66:["rev","rv","apoc","revelation"],
+};
+for (const entry of BOOK_ALIASES) {
+  entry.aliases.push(...(ENGLISH_ALIASES[entry.book] ?? []));
+}
+
 const ALIAS_TO_BOOK = new Map<string, { book: number; canonical: string }>();
 const SORTED_ALIASES: string[] = [];
 
@@ -135,7 +148,7 @@ function escapeRegex(text: string): string {
 
 const BOOK_PATTERN = SORTED_ALIASES.map(escapeRegex).join("|");
 const SCRIPTURE_REGEX = new RegExp(
-  `(^|[^\\p{L}\\p{N}])((?:${BOOK_PATTERN})\\.?\\s+(\\d{1,3})\\s*[:.,]\\s*(\\d{1,3})(?:\\s*[-–—]\\s*(\\d{1,3}))?)(?![\\p{L}\\p{N}])`,
+  `(^|[^\\p{L}\\p{N}])((?:${BOOK_PATTERN})\\.?\\s+(\\d{1,3})(?:\\s*[:.,]\\s*(\\d{1,3}))?(?:\\s*[-–—]\\s*(\\d{1,3}))?(?:\\s*(?:f{1,2}\\.?|[ab]))?(?:\\s*\\([^)]{0,24}\\))?)(?![\\p{L}\\p{N}])`,
   "giu",
 );
 
@@ -146,6 +159,19 @@ export function processBookChapterHtml(rawHtml: string): ProcessedBookChapter {
     .replace(/\s+/g, " ");
   const doc = parser.parseFromString(cleaned, "text/html");
   const body = doc.body;
+  let baseBook = 0;
+  let baseChapter = 1;
+  const titleText = `${body.querySelector("h1,h2,h3")?.textContent ?? ""} ${(body.textContent ?? "").slice(0, 800)}`.toLowerCase();
+  for (const alias of SORTED_ALIASES) {
+    if (alias.length < 3) continue;
+    const pattern = new RegExp(`(^|[^\\p{L}\\p{N}])${escapeRegex(alias)}(?![\\p{L}\\p{N}])`, "iu");
+    if (pattern.test(titleText)) {
+      const info = ALIAS_TO_BOOK.get(alias);
+      if (info && (!baseBook || alias.length > 3)) { baseBook = info.book; }
+    }
+  }
+  const chapterHint = /\((\d{1,3})[:.]\d{1,3}/.exec(titleText);
+  if (chapterHint) baseChapter = Number(chapterHint[1]);
 
   // 1a. Neutralize ghost anchors and promote bullet paragraphs.
   body.querySelectorAll<HTMLAnchorElement>("a").forEach((anchor) => {
@@ -312,6 +338,30 @@ export function processBookChapterHtml(rawHtml: string): ProcessedBookChapter {
     firstParagraph.classList.add("book-lead-paragraph", "book-opening-paragraph");
   }
 
+  // Convierte spans generados por Rust/PBB sin atributos interactivos.
+  body.querySelectorAll<HTMLElement>("span.scripture-ref").forEach((span) => {
+    const text = (span.textContent ?? "").trim();
+    SCRIPTURE_REGEX.lastIndex = 0;
+    const match = SCRIPTURE_REGEX.exec(text);
+    if (!match || !span.parentNode) return;
+    const alias = (match[2].match(/^(.*?)\.?\s+\d/u)?.[1] ?? "").toLowerCase().replace(/\.$/, "");
+    const info = ALIAS_TO_BOOK.get(alias);
+    if (!info) return;
+    const chapter = Number(match[3] || 1);
+    const verse = Number(match[4] || 1);
+    const link = doc.createElement("a");
+    link.className = "scripture-ref-link";
+    link.href = "#";
+    link.dataset.book = String(info.book);
+    link.dataset.bookName = info.canonical;
+    link.dataset.chapter = String(chapter);
+    link.dataset.verse = String(verse);
+    link.dataset.endVerse = String(match[5] ? Number(match[5]) : verse);
+    link.dataset.label = `${info.canonical} ${chapter}:${verse}`;
+    link.textContent = text;
+    span.replaceWith(link);
+  });
+
   // 4. Detect and linkify Scripture references across text nodes
   const scriptureRefs: DetectedScriptureRef[] = [];
   const seenKeys = new Set<string>();
@@ -349,11 +399,11 @@ export function processBookChapterHtml(rawHtml: string): ProcessedBookChapter {
       const prefix = match[1] ?? "";
       const fullRef = match[2] ?? "";
       const chapterNum = Number(match[3]);
-      const verseNum = Number(match[4]);
+      const verseNum = Number(match[4] ?? 1);
       const endVerseNum = match[5] ? Number(match[5]) : verseNum;
 
       // Extract book alias part before chapter number
-      const bookPartMatch = /^(.*?)\.?\s+\d{1,3}\s*[:.,]/u.exec(fullRef);
+      const bookPartMatch = /^(.*?)\.?\s+\d{1,3}/u.exec(fullRef);
       const rawAlias = (bookPartMatch?.[1] ?? "").trim().toLowerCase().replace(/\.$/, "");
       const bookInfo = ALIAS_TO_BOOK.get(rawAlias) ?? ALIAS_TO_BOOK.get(`${rawAlias}.`);
       if (!bookInfo || !chapterNum || !verseNum) continue;
@@ -435,8 +485,8 @@ export function processBookChapterHtml(rawHtml: string): ProcessedBookChapter {
     const preceding = explicitLinks
       .filter((link) => node.compareDocumentPosition(link) & Node.DOCUMENT_POSITION_PRECEDING)
       .pop();
-    const book = Number(preceding?.dataset.book ?? 0);
-    const chapter = Number(preceding?.dataset.chapter ?? 0);
+    const book = Number(preceding?.dataset.book ?? baseBook ?? 0);
+    const chapter = Number(preceding?.dataset.chapter ?? baseChapter ?? 0);
     if (!book || !chapter) continue;
     const raw = node.nodeValue ?? "";
     implicitRegex.lastIndex = 0;
