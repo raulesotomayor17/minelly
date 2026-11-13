@@ -288,6 +288,15 @@ export default function DockWorkspaceCore({
   }
 
   useEffect(() => {
+    if (!moduleMenuOpen) return;
+    const onModuleKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setModuleMenuOpen(false);
+    };
+    window.addEventListener("keydown", onModuleKey);
+    return () => window.removeEventListener("keydown", onModuleKey);
+  }, [moduleMenuOpen]);
+
+  useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "o") {
         event.preventDefault();
