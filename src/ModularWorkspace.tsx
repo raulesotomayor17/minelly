@@ -813,6 +813,14 @@ export function PaneView({
   const [tabMenuOpen, setTabMenuOpen] = useState(false);
   const [compareVersionsOpen, setCompareVersionsOpen] = useState(false);
   const [paneContextMenu, setPaneContextMenu] = useState<{ x: number; y: number; text: string; verse: number } | null>(null);
+  useEffect(() => {
+    if (!paneContextMenu) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setPaneContextMenu(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [paneContextMenu]);
   const [paneScale, setPaneScale] = useState(1);
   const [showTopics, setShowTopics] = useState(true);
   const [showRecentTopics, setShowRecentTopics] = useState(false);
@@ -1139,6 +1147,25 @@ export function PaneView({
 
   void modNotes;
   void saveModNote;
+
+  async function deletePaneHighlights() {
+    if (!paneContextMenu) return;
+    try {
+      const prefix = `bible:${osisForBook(reference.book)}:${reference.chapter}:`;
+      const bundle = await invoke<{ highlights: Array<{ id: string; anchorUri: string }> }>("annotations_for_prefix", { prefix });
+      const anchor = bibleAnchor(reference.book, reference.chapter, paneContextMenu.verse);
+      const matches = (bundle.highlights ?? []).filter((item) => item.anchorUri.startsWith(anchor));
+      for (const item of matches) await invoke("highlight_delete", { id: item.id });
+      setPaneContextMenu(null);
+    } catch (value) { setError(String(value)); }
+  }
+
+  function copyPaneReference(withText: boolean) {
+    if (!paneContextMenu) return;
+    const label = `${bookName(books, reference.book)} ${reference.chapter}:${paneContextMenu.verse}`;
+    void navigator.clipboard.writeText(withText ? `${label} — «${paneContextMenu.text}»` : label);
+    setPaneContextMenu(null);
+  }
 
   async function savePaneHighlight(styleId: string) {
     if (!paneContextMenu) return;
@@ -2318,11 +2345,14 @@ export function PaneView({
         <div className="mod-verse-context-menu" style={{ left: paneContextMenu.x, top: paneContextMenu.y }}>
           <strong>Referencia {reference.book}:{reference.chapter}:{paneContextMenu.verse}</strong>
           <button type="button" onClick={() => { void navigator.clipboard.writeText(paneContextMenu.text); setPaneContextMenu(null); }}>Copiar texto</button>
+          <button type="button" onClick={() => copyPaneReference(false)}>Copiar referencia</button>
+          <button type="button" onClick={() => copyPaneReference(true)}>Copiar referencia + texto</button>
           <div className="mod-context-colors">
             {["yellow", "green", "blue", "pink", "orange"].map((color) => (
               <button key={color} type="button" className={`mod-context-color ${color}`} onClick={() => void savePaneHighlight(color)} aria-label={`Resaltar ${color}`} />
             ))}
           </div>
+          <button type="button" onClick={() => void deletePaneHighlights()}>Quitar resaltado</button>
           <button type="button" onClick={() => void savePaneNote()}>Crear nota</button>
         </div>
       )}
