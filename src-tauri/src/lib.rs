@@ -18,8 +18,11 @@ pub mod rag;
 pub mod sermon;
 pub mod wordstudy;
 
-use std::path::PathBuf;
+use std::io::{copy as copy_stream, Write};
+use std::path::{Path, PathBuf};
 use std::sync::Mutex;
+
+use flate2::read::GzDecoder;
 
 use tauri::Manager;
 
@@ -46,6 +49,30 @@ pub fn run() {
                     .map_err(|error| std::io::Error::other(error.to_string()))?
                     .join("catalog.sqlite")
             };
+            if !db_path.exists() {
+                let mut candidates = Vec::new();
+                if let Ok(resource_dir) = app.path().resource_dir() {
+                    candidates.push(resource_dir.join("clean_catalog.sqlite.gz"));
+                    candidates.push(resource_dir.join("premium_catalog.sqlite.gz"));
+                }
+                candidates.push(PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("resources/clean_catalog.sqlite.gz"));
+                candidates.push(PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("resources/premium_catalog.sqlite.gz"));
+                if let Some(bundle) = candidates.into_iter().find(|path| path.is_file()) {
+                    if let Some(parent) = Path::new(&db_path).parent() {
+                        let _ = std::fs::create_dir_all(parent);
+                    }
+                    let result = (|| -> std::io::Result<()> {
+                        let mut input = GzDecoder::new(std::fs::File::open(&bundle)?);
+                        let mut output = std::fs::File::create(&db_path)?;
+                        copy_stream(&mut input, &mut output)?;
+                        output.flush()?;
+                        Ok(())
+                    })();
+                    if let Err(error) = result {
+                        eprintln!("No se pudo instalar el catálogo empaquetado: {error}");
+                    }
+                }
+            }
             let mut catalog = Catalog::open(&db_path).map_err(|error| {
                 std::io::Error::other(format!("no se pudo abrir el catálogo: {error:#}"))
             })?;
