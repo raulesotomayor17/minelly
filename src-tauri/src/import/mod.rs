@@ -95,6 +95,7 @@ pub fn import_path(catalog: &mut Catalog, path: &Path) -> Result<ImportReport> {
         catalog.replace_epub_chapters(&resource.id, &parsed.chapters)?;
         resource.entry_count = parsed.chapters.len() as i64;
         catalog.upsert_resource(&resource)?;
+        let _ = crate::indexer::index_resource(catalog.connection_mut(), &resource.id);
         return Ok(ImportReport {
             resource,
             warnings: parsed.warnings,
