@@ -2411,6 +2411,14 @@ export default function ModularWorkspace({
   const [selectedProfile, setSelectedProfile] = useState("");
   const [localReaderFont, setLocalReaderFont] = useState(readerFont);
   const [moduleMenuOpen, setModuleMenuOpen] = useState(false);
+  useEffect(() => {
+    if (!moduleMenuOpen) return;
+    const onModuleKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setModuleMenuOpen(false);
+    };
+    window.addEventListener("keydown", onModuleKey);
+    return () => window.removeEventListener("keydown", onModuleKey);
+  }, [moduleMenuOpen]);
   const [localStudyFont, setLocalStudyFont] = useState(studyFont);
   const [localReaderScale, setLocalReaderScale] = useState(readerScale);
   const [localStudyScale, setLocalStudyScale] = useState(studyScale);
