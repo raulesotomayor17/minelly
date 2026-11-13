@@ -16851,3 +16851,45 @@ html:is([data-theme="white"],[data-theme="warm"],[data-theme="terracotta"],[data
   background: color-mix(in srgb, var(--accent) 9%, var(--bg-card));
   box-shadow: inset 2px 0 0 var(--accent);
 }
+
+/* Tokens completos por apariencia de panel: evita texto claro sobre fondo claro. */
+.pane-appearance-light {
+  --panel: #ffffff; --panel-2: #f3f4f6;
+  --bg-card: #ffffff; --bg-input: #f3f4f6; --bg-shell: #eef1f5;
+  --text: #111827; --text-primary: #111827; --text-secondary: #374151; --text-muted: #6b7280; --muted: #4b5563;
+  --border: #d1d5db; --border-soft: #e5e7eb; --border-strong: #9ca3af;
+  --accent: #0f6cbd; --accent-soft: rgba(15,108,189,.12); --faint: #6b7280;
+  background: #ffffff;
+}
+.pane-appearance-sepia {
+  --panel: #f4ecd8; --panel-2: #e8dcc0;
+  --bg-card: #f4ecd8; --bg-input: #e8dcc0; --bg-shell: #ece1c8;
+  --text: #2b2118; --text-primary: #2b2118; --text-secondary: #5c4a32; --text-muted: #7a6548; --muted: #5c4a32;
+  --border: #cdbb98; --border-soft: #dfd0b4; --border-strong: #b8a37d;
+  --accent: #9a6700; --accent-soft: rgba(154,103,0,.13); --faint: #7a6548;
+  background: #f4ecd8;
+}
+.pane-appearance-dark {
+  --panel: #111827; --panel-2: #1f2937;
+  --bg-card: #111827; --bg-input: #1f2937; --bg-shell: #0b1220;
+  --text: #f9fafb; --text-primary: #f9fafb; --text-secondary: #d1d5db; --text-muted: #9ca3af; --muted: #d1d5db;
+  --border: #374151; --border-soft: #4b5563; --border-strong: #6b7280;
+  --accent: #38bdf8; --accent-soft: rgba(56,189,248,.14); --faint: #9ca3af;
+  background: #111827;
+}
+.pane-appearance-contrast {
+  --panel: #000000; --panel-2: #111111;
+  --bg-card: #000000; --bg-input: #111111; --bg-shell: #000000;
+  --text: #ffffff; --text-primary: #ffffff; --text-secondary: #ffff00; --text-muted: #ffff00; --muted: #ffff00;
+  --border: #ffff00; --border-soft: #ffff00; --border-strong: #ffff00;
+  --accent: #ffff00; --accent-soft: rgba(255,255,0,.14); --faint: #ffff00;
+  background: #000000;
+}
+.pane-appearance-light :is(.mod-verse-text, .mod-verse, .mod-reference, .mod-muted),
+.pane-appearance-sepia :is(.mod-verse-text, .mod-verse, .mod-reference, .mod-muted) {
+  color: var(--text-primary) !important;
+}
+.pane-appearance-light .mod-verse-number,
+.pane-appearance-sepia .mod-verse-number { color: var(--accent) !important; }
+.pane-appearance-light .mod-verse:hover,
+.pane-appearance-sepia .mod-verse:hover { background: rgba(15, 23, 42, .045) !important; }
