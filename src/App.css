@@ -16473,3 +16473,9 @@ html:is([data-theme="white"],[data-theme="warm"],[data-theme="terracotta"],[data
 .toc-row-actions { display: flex; gap: 2px; opacity: 0; transition: opacity .12s; }
 .toc-row:hover .toc-row-actions, .toc-row:focus-within .toc-row-actions { opacity: 1; }
 .toc-row-actions button { padding: 2px 4px; border: 1px solid var(--border-soft); border-radius: 3px; background: var(--bg-input); color: var(--text-secondary); cursor: pointer; }
+
+.toc-rename-input { flex: 1; min-width: 0; height: 27px; padding: 0 5px; border: 1px solid var(--accent); border-radius: 4px; background: var(--bg-input); color: var(--text-primary); font-size: 11px; }
+.toc-outline-row { display: flex; align-items: center; gap: 3px; }
+.toc-outline-row > .toc-item { flex: 1; }
+.toc-outline-row .toc-row-actions { opacity: 0; }
+.toc-outline-row:hover .toc-row-actions, .toc-outline-row:focus-within .toc-row-actions { opacity: 1; }

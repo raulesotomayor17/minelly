@@ -56,6 +56,8 @@ struct Paragraph {
     bookmarks: Vec<String>,
     page_break: bool,
     section_break: bool,
+    font_size_half_pts: Option<u32>,
+    bold: bool,
 }
 
 pub fn read_docx(path: &Path) -> Result<DocxDocument> {
@@ -116,6 +118,7 @@ pub fn read_docx(path: &Path) -> Result<DocxDocument> {
         }
     }
 
+    adaptive_heading_sizes(&mut paragraphs);
     let healed = autosanear_paragraphs(&mut paragraphs);
     let core = parse_core(&core_xml)?;
     let company = parse_app(&app_xml)?;
@@ -369,6 +372,26 @@ fn is_page_number(text: &str) -> bool {
         || (!stripped.is_empty()
             && stripped.chars().all(|c| "ivxlcdm".contains(c))
             && stripped.len() <= 8)
+}
+
+fn adaptive_heading_sizes(paragraphs: &mut Vec<Paragraph>) {
+    use std::collections::HashMap;
+    let mut counts: HashMap<u32, usize> = HashMap::new();
+    for p in paragraphs.iter() {
+        if p.heading_level.is_none() && p.text.chars().count() > 40 {
+            if let Some(sz) = p.font_size_half_pts { *counts.entry(sz).or_insert(0) += 1; }
+        }
+    }
+    let body_sz = counts.into_iter().max_by_key(|(_, n)| *n).map(|(sz, _)| sz).unwrap_or(0);
+    if body_sz == 0 { return; }
+    for p in paragraphs.iter_mut() {
+        if p.heading_level.is_some() || p.text.is_empty() || p.text.chars().count() > 160 { continue; }
+        if let Some(sz) = p.font_size_half_pts {
+            if sz >= body_sz + 6 { p.heading_level = Some(1); }
+            else if sz >= body_sz + 2 && p.bold { p.heading_level = Some(2); }
+            else if sz >= body_sz + 2 { p.heading_level = Some(3); }
+        }
+    }
 }
 
 fn autosanear_paragraphs(paragraphs: &mut Vec<Paragraph>) -> usize {
@@ -777,6 +800,8 @@ fn parse_paragraph(
         bookmarks,
         page_break,
         section_break,
+        font_size_half_pts: effective_sz,
+        bold: effective_bold,
     }
 }
 

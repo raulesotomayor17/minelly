@@ -687,6 +687,8 @@ function App() {
   const [bookFullMode, setBookFullMode] = useState(false);
   const [bookFullChapters, setBookFullChapters] = useState<EpubChapter[]>([]);
   const [bookCurationMode, setBookCurationMode] = useState(false);
+  const [renamingChapter, setRenamingChapter] = useState<number | null>(null);
+  const [renameDraft, setRenameDraft] = useState("");
   const [bookHoveredBlock, setBookHoveredBlock] = useState<{ node: HTMLElement; x: number; y: number } | null>(null);
   const [bookSpine, setBookSpine] = useState(lastLocation.bookSpine ?? 0);
   const [bookChapter, setBookChapter] = useState<EpubChapter | null>(null);
@@ -3022,11 +3024,12 @@ function App() {
     setBookProgress(Math.min(100, Math.max(0, next)));
   }
 
-  async function renameBookChapter(spine: number, currentTitle: string) {
-    const title = window.prompt("Nuevo título del capítulo", currentTitle);
-    if (!title || title.trim() === currentTitle) return;
+  async function saveChapterRename(spine: number, currentTitle: string) {
+    const title = renameDraft.trim();
+    setRenamingChapter(null);
+    if (!title || title === currentTitle) return;
     try {
-      await invoke("book_rename_chapter", { resourceId: bookId, spine, newTitle: title.trim() });
+      await invoke("book_rename_chapter", { resourceId: bookId, spine, newTitle: title });
       setBookStructureTick((value) => value + 1);
       setStatus("Capítulo renombrado.");
     } catch (error) { setStatus(String(error)); }
@@ -5789,12 +5792,26 @@ function App() {
                 <div className="book-toc-list">
                   {bookChapters.map((chapterItem, index) => (
                     <div key={chapterItem.spine} className={chapterItem.spine === bookSpine ? "toc-row active" : "toc-row"}>
-                      <button type="button" className="toc-item" onClick={() => setBookSpine(chapterItem.spine)}>
-                        <span>{index + 1}</span>
-                        <strong>{chapterItem.title}</strong>
-                      </button>
+                      {renamingChapter === chapterItem.spine ? (
+                        <input
+                          className="toc-rename-input"
+                          autoFocus
+                          value={renameDraft}
+                          onChange={(event) => setRenameDraft(event.target.value)}
+                          onBlur={() => void saveChapterRename(chapterItem.spine, chapterItem.title)}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter") void saveChapterRename(chapterItem.spine, chapterItem.title);
+                            if (event.key === "Escape") setRenamingChapter(null);
+                          }}
+                        />
+                      ) : (
+                        <button type="button" className="toc-item" onClick={() => setBookSpine(chapterItem.spine)}>
+                          <span>{index + 1}</span>
+                          <strong>{chapterItem.title}</strong>
+                        </button>
+                      )}
                       <div className="toc-row-actions">
-                        <button type="button" title="Renombrar capítulo" onClick={() => void renameBookChapter(chapterItem.spine, chapterItem.title)}>✎</button>
+                        <button type="button" title="Renombrar capítulo" onClick={() => { setRenameDraft(chapterItem.title); setRenamingChapter(chapterItem.spine); }}>✎</button>
                         {chapterItem.spine > 0 && <button type="button" title="Unir con el capítulo anterior" onClick={() => void mergeBookChapter(chapterItem.spine)}>⇡</button>}
                       </div>
                     </div>
@@ -5808,8 +5825,8 @@ function App() {
               {bookTocTab === "outline" && (
                 <div className="book-toc-list">
                   {processedBookChapter.outline.map((heading) => (
+                    <div key={heading.id} className="toc-outline-row">
                     <button
-                      key={heading.id}
                       type="button"
                       className={`toc-item outline-level-${heading.level}`}
                       onClick={() => {
@@ -5835,6 +5852,12 @@ function App() {
                       <span>H{heading.level}</span>
                       <strong>{heading.text}</strong>
                     </button>
+                    <div className="toc-row-actions">
+                      {([2, 3, 4] as const).map((level) => (
+                        <button key={level} type="button" title={`Convertir en H${level}`} onClick={() => void applyBookBlockTag(`h${level}` as "h2" | "h3" | "h4", document.getElementById(heading.id))}>H{level}</button>
+                      ))}
+                    </div>
+                    </div>
                   ))}
                   {processedBookChapter.outline.length === 0 && (
                     <p className="empty-hint">
