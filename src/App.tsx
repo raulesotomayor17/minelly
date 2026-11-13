@@ -8,6 +8,7 @@ import NotesWorkspace from "./NotesWorkspace";
 import StudyAssistant, { type RagContext } from "./StudyAssistant";
 import EreaderWorkspace from "./EreaderWorkspace";
 import ResourceEmblem from "./ResourceEmblem";
+import BibleVersionPicker from "./BibleVersionPicker";
 import ProfileModal from "./ProfileModal";
 import { loadProfile, type UserProfile } from "./profile";
 import WordStudyPanel from "./WordStudyPanel";
@@ -4000,16 +4001,7 @@ function App() {
                   </button>
                 </>
               )}
-              <SelectMenu
-                className="version-select-menu"
-                value={bibleId}
-                onChange={setBibleId}
-                ariaLabel="Versión de la Biblia"
-                options={bibles.map((resource) => ({
-                  value: resource.id,
-                  label: resource.abbreviation || resource.title,
-                }))}
-              />
+              <BibleVersionPicker bibles={bibles} value={bibleId} onChange={setBibleId} />
             </div>
           )}
 
