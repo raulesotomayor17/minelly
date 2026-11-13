@@ -912,6 +912,11 @@ function App() {
     [bookChapter?.html],
   );
 
+  const processedBookFull = useMemo(
+    () => bookFullChapters.map((chapter) => processBookChapterHtml(chapter.html)),
+    [bookFullChapters],
+  );
+
   useEffect(() => {
     localStorage.setItem(
       "teoamoxtli.book-typesetting.v1",
@@ -6212,13 +6217,13 @@ function App() {
                   {bookChapter ? (
                     bookFullMode ? (
                       <div className="book-full-surface">
-                        {bookFullChapters.map((chapter) => (
+                        {bookFullChapters.map((chapter, index) => (
                           <section key={chapter.spine} className="book-full-chapter" data-spine={chapter.spine}>
                             <h1>{chapter.title}</h1>
                             <div
                               className="book-typeset-surface"
                               onClick={handleScriptureLinkClick}
-                              dangerouslySetInnerHTML={{ __html: chapter.html }}
+                              dangerouslySetInnerHTML={{ __html: processedBookFull[index]?.html ?? chapter.html }}
                             />
                           </section>
                         ))}
