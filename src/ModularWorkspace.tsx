@@ -1810,6 +1810,17 @@ export function PaneView({
                 Δ Diferencias
               </button>
             </div>
+            <label className="mod-compare-base-select">
+              <span>Biblia preferida / base</span>
+              <select
+                value={pane.state.resourceId ?? bibles[0]?.id ?? ""}
+                onChange={(event) => onResource(pane.id, event.target.value)}
+              >
+                {bibles.map((bible) => (
+                  <option key={bible.id} value={bible.id}>{bible.abbreviation || bible.title}</option>
+                ))}
+              </select>
+            </label>
             <div className="mod-compare-version-pills">
               {bibles.map((b) => {
                 const isBase = b.id === (pane.state.resourceId || bibles[0]?.id);
