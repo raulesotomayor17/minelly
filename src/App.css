@@ -16686,3 +16686,14 @@ html:is([data-theme="white"],[data-theme="warm"],[data-theme="terracotta"],[data
 }
 .mod-compare-picker .mod-compare-base-select,
 .mod-compare-picker .mod-compare-version-pills { margin-top: 5px; }
+
+.mod-verse-context-menu { position: fixed; z-index: 5000; display: grid; gap: 3px; width: 200px; padding: 7px; border: 1px solid var(--border); border-radius: 7px; background: var(--bg-card); color: var(--text-primary); box-shadow: 0 12px 30px rgba(0,0,0,.4); }
+.mod-verse-context-menu strong { padding: 2px 4px 5px; color: var(--text-secondary); font-size: 10px; }
+.mod-verse-context-menu button { padding: 5px 7px; border: 1px solid var(--border-soft); border-radius: 4px; background: var(--bg-input); color: var(--text-primary); text-align: left; font-size: 11px; cursor: pointer; }
+.mod-context-colors { display: flex; gap: 4px; }
+.mod-context-colors button { width: 22px; height: 22px; padding: 0; border-radius: 50%; border: 1px solid var(--border); }
+.mod-context-color.yellow { background: #eab308 !important; }
+.mod-context-color.green { background: #22c55e !important; }
+.mod-context-color.blue { background: #3b82f6 !important; }
+.mod-context-color.pink { background: #ec4899 !important; }
+.mod-context-color.orange { background: #f97316 !important; }

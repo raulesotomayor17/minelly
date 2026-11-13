@@ -10,10 +10,11 @@ import {
 } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { readText, writeText } from "@tauri-apps/plugin-clipboard-manager";
-import { bibleAnchor, osisForBook } from "./anchors";
+import { bibleAnchor, osisForBook, parseAnchor } from "./anchors";
 import { PaperModePicker } from "./CustomizationModal";
 import EreaderWorkspace from "./EreaderWorkspace";
 import StudyAssistant from "./StudyAssistant";
+import NotesWorkspace from "./NotesWorkspace";
 import SermonWorkspace from "./SermonWorkspace";
 import { processBookChapterHtml } from "./bookProcessor";
 import InterlinearVerse, { type InterlinearVerseData } from "./InterlinearVerse";
@@ -811,6 +812,7 @@ export function PaneView({
   const [searchHits, setSearchHits] = useState<ModSearchHit[]>([]);
   const [tabMenuOpen, setTabMenuOpen] = useState(false);
   const [compareVersionsOpen, setCompareVersionsOpen] = useState(false);
+  const [paneContextMenu, setPaneContextMenu] = useState<{ x: number; y: number; text: string; verse: number } | null>(null);
   const [paneScale, setPaneScale] = useState(1);
   const [showTopics, setShowTopics] = useState(true);
   const [showRecentTopics, setShowRecentTopics] = useState(false);
@@ -1133,6 +1135,40 @@ export function PaneView({
     } catch (value) {
       setError(String(value));
     }
+  }
+
+  void modNotes;
+  void saveModNote;
+
+  async function savePaneHighlight(styleId: string) {
+    if (!paneContextMenu) return;
+    try {
+      await invoke("highlight_create", {
+        anchorUri: bibleAnchor(reference.book, reference.chapter, paneContextMenu.verse),
+        exactText: paneContextMenu.text,
+        styleId,
+        startOffset: 0,
+        endOffset: 0,
+      });
+      setPaneContextMenu(null);
+    } catch (value) { setError(String(value)); }
+  }
+
+  async function savePaneNote() {
+    if (!paneContextMenu) return;
+    const body = window.prompt("Nota sobre este versículo", "");
+    if (!body?.trim()) return;
+    try {
+      await invoke("note_upsert", { input: {
+        id: null,
+        title: body.slice(0, 80),
+        contentJson: JSON.stringify({ type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: body }] }] }),
+        plainText: body,
+        anchors: [{ anchorUri: bibleAnchor(reference.book, reference.chapter, paneContextMenu.verse), exactText: paneContextMenu.text, startOffset: 0, endOffset: 0 }],
+        tagIds: [],
+      }});
+      setPaneContextMenu(null);
+    } catch (value) { setError(String(value)); }
   }
 
   async function saveModNote() {
@@ -1753,6 +1789,16 @@ export function PaneView({
                   <span className="mod-verse-number">{verse.verse}</span>
                   <div
                     className="mod-verse-text"
+                    onContextMenu={(event) => {
+                      event.preventDefault();
+                      const selected = window.getSelection()?.toString().trim();
+                      setPaneContextMenu({
+                        x: Math.min(window.innerWidth - 230, event.clientX),
+                        y: Math.min(window.innerHeight - 220, event.clientY),
+                        text: selected || (event.currentTarget.textContent ?? "").trim(),
+                        verse: verse.verse,
+                      });
+                    }}
                     dangerouslySetInnerHTML={{ __html: verse.html }}
                   />
                 </div>
@@ -2192,44 +2238,23 @@ export function PaneView({
         )}
 
         {pane.resourceType === "notes" && (
-          <div className="mod-notes-pane">
-            <div className="mod-reference">Notas · {referenceLabel}</div>
-            <div className="mod-note-composer">
-              <input
-                value={noteTitle}
-                onChange={(event) => setNoteTitle(event.target.value)}
-                placeholder={`Título de la nota (${referenceLabel})`}
-                aria-label="Título de la nota"
-              />
-              <textarea
-                rows={3}
-                value={noteBody}
-                onChange={(event) => setNoteBody(event.target.value)}
-                placeholder="Escribe tu nota exegética sincronizada con este pasaje…"
-                aria-label="Contenido de la nota"
-              />
-              <button
-                type="button"
-                className="modular-save"
-                onClick={() => void saveModNote()}
-              >
-                Guardar nota en {referenceLabel}
-              </button>
-            </div>
-            <div className="mod-notes-list">
-              {modNotes.map((n) => (
-                <article key={n.id} className="mod-commentary">
-                  <div className="mod-entry-range">{n.title}</div>
-                  <p className="mod-rich-text">{n.excerpt}</p>
-                </article>
-              ))}
-              {!loading && modNotes.length === 0 && (
-                <p className="mod-muted">
-                  No hay notas guardadas para este capítulo todavía.
-                </p>
-              )}
-            </div>
-          </div>
+          <NotesWorkspace
+            key={`${reference.book}:${reference.chapter}:${reference.verse}`}
+            books={books}
+            initialAnchor={{
+              anchorUri: bibleAnchor(reference.book, reference.chapter, reference.verse),
+              exactText: referenceLabel,
+              startOffset: 0,
+              endOffset: 0,
+              label: referenceLabel,
+            }}
+            onClose={() => undefined}
+            onOpenAnchor={(anchorUri) => {
+              const parsed = parseAnchor(anchorUri);
+              if (parsed?.kind === "bible") onReference(pane.id, { book: parsed.book, chapter: parsed.chapter, verse: parsed.verse }, "explicit_navigation");
+            }}
+            onChanged={() => undefined}
+          />
         )}
 
         {pane.resourceType === "search" && (
@@ -2289,6 +2314,18 @@ export function PaneView({
           </div>
         )}
       </div>
+      {paneContextMenu && (
+        <div className="mod-verse-context-menu" style={{ left: paneContextMenu.x, top: paneContextMenu.y }}>
+          <strong>Referencia {reference.book}:{reference.chapter}:{paneContextMenu.verse}</strong>
+          <button type="button" onClick={() => { void navigator.clipboard.writeText(paneContextMenu.text); setPaneContextMenu(null); }}>Copiar texto</button>
+          <div className="mod-context-colors">
+            {["yellow", "green", "blue", "pink", "orange"].map((color) => (
+              <button key={color} type="button" className={`mod-context-color ${color}`} onClick={() => void savePaneHighlight(color)} aria-label={`Resaltar ${color}`} />
+            ))}
+          </div>
+          <button type="button" onClick={() => void savePaneNote()}>Crear nota</button>
+        </div>
+      )}
     </div>
   );
 }
