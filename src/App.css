@@ -16697,3 +16697,46 @@ html:is([data-theme="white"],[data-theme="warm"],[data-theme="terracotta"],[data
 .mod-context-color.blue { background: #3b82f6 !important; }
 .mod-context-color.pink { background: #ec4899 !important; }
 .mod-context-color.orange { background: #f97316 !important; }
+
+/* Menú de módulos del Lienzo: editorial, sobrio, alta gama */
+.modular-module-menu-wrap > button::after { content: "⌄"; margin-left: 6px; font-size: 10px; opacity: .65; }
+.canvas-module-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 900;
+  width: 306px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--accent) 18%, var(--border));
+  border-radius: 12px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--accent) 4%, var(--bg-elevated, var(--bg-card))), var(--bg-elevated, var(--bg-card)));
+  color: var(--text-primary);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, .48), 0 2px 8px rgba(0, 0, 0, .24);
+  backdrop-filter: blur(18px) saturate(125%);
+  animation: canvas-menu-in 160ms cubic-bezier(.2,.8,.2,1);
+}
+@keyframes canvas-menu-in { from { opacity: 0; transform: translateY(-6px) scale(.985); } to { opacity: 1; transform: none; } }
+.canvas-module-menu-head { display: flex; align-items: flex-start; justify-content: space-between; padding: 13px 14px 10px; border-bottom: 1px solid var(--border-soft); }
+.canvas-module-menu-head > div { display: grid; gap: 2px; }
+.canvas-module-menu-kicker { color: var(--accent); font-size: 9px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+.canvas-module-menu-head strong { font-family: var(--serif); font-size: 17px; font-weight: 600; letter-spacing: .01em; }
+.canvas-module-menu-close { width: 24px; height: 24px; border: 0; border-radius: 50%; background: transparent; color: var(--text-secondary); font-size: 18px; line-height: 1; cursor: pointer; }
+.canvas-module-menu-close:hover { background: var(--bg-input); color: var(--text-primary); }
+.canvas-module-menu-group { display: grid; gap: 2px; padding: 9px 8px 5px; }
+.canvas-module-menu-label { padding: 0 7px 5px; color: var(--text-muted); font-size: 9px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+.canvas-module-item { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 48px; padding: 6px 8px; border: 1px solid transparent; border-radius: 8px; background: transparent; color: var(--text-primary); text-align: left; cursor: pointer; transition: background 160ms ease, border-color 160ms ease, transform 160ms ease; }
+.canvas-module-item:hover, .canvas-module-item:focus-visible { background: color-mix(in srgb, var(--accent) 8%, transparent); border-color: color-mix(in srgb, var(--accent) 18%, transparent); transform: translateX(2px); outline: none; }
+.canvas-module-icon { display: grid; place-items: center; flex: 0 0 34px; width: 34px; height: 34px; border-radius: 8px; border: 1px solid var(--border-soft); background: var(--bg-input); color: var(--accent); }
+.canvas-module-item.compare .canvas-module-icon { color: #60a5fa; }
+.canvas-module-item.ereader .canvas-module-icon { color: #d97706; }
+.canvas-module-item.assistant .canvas-module-icon { color: #a78bfa; }
+.canvas-module-item.notes .canvas-module-icon { color: #34d399; }
+.canvas-module-item.sermons .canvas-module-icon { color: #fb7185; }
+.canvas-module-copy { display: grid; flex: 1; gap: 1px; min-width: 0; }
+.canvas-module-copy strong { font-size: 12px; font-weight: 600; }
+.canvas-module-copy small { color: var(--text-muted); font-size: 9.5px; }
+.canvas-module-arrow { color: var(--text-muted); font-size: 17px; opacity: 0; transform: translateX(-3px); transition: opacity 160ms, transform 160ms; }
+.canvas-module-item:hover .canvas-module-arrow { opacity: .8; transform: none; }
+.canvas-module-menu-foot { display: flex; align-items: center; gap: 6px; padding: 9px 14px 11px; border-top: 1px solid var(--border-soft); color: var(--text-muted); font-size: 9px; }
+.canvas-module-menu-foot kbd { padding: 1px 5px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-input); color: var(--text-secondary); font: inherit; }

@@ -15,6 +15,7 @@ import { PaperModePicker } from "./CustomizationModal";
 import EreaderWorkspace from "./EreaderWorkspace";
 import StudyAssistant from "./StudyAssistant";
 import NotesWorkspace from "./NotesWorkspace";
+import CanvasModuleMenu from "./CanvasModuleMenu";
 import SermonWorkspace from "./SermonWorkspace";
 import { processBookChapterHtml } from "./bookProcessor";
 import InterlinearVerse, { type InterlinearVerseData } from "./InterlinearVerse";
@@ -3359,13 +3360,10 @@ export default function ModularWorkspace({
           <div className="modular-module-menu-wrap">
             <button type="button" className="modular-small" onClick={() => setModuleMenuOpen((current) => !current)}>Abrir módulo</button>
             {moduleMenuOpen && (
-              <div className="modular-module-menu">
-                <button type="button" onClick={() => { setModuleMenuOpen(false); addPane("docked", "compare" as PaneType); }}>Comparador</button>
-                <button type="button" onClick={() => { setModuleMenuOpen(false); addPane("docked", "ereader" as PaneType); }}>eReader</button>
-                <button type="button" onClick={() => { setModuleMenuOpen(false); addPane("docked", "assistant" as PaneType); }}>Asistente</button>
-                <button type="button" onClick={() => { setModuleMenuOpen(false); addPane("docked", "notes" as PaneType); }}>Notas</button>
-                <button type="button" onClick={() => { setModuleMenuOpen(false); addPane("docked", "sermons" as PaneType); }}>Sermones</button>
-              </div>
+              <CanvasModuleMenu
+                onClose={() => setModuleMenuOpen(false)}
+                onSelect={(id) => { setModuleMenuOpen(false); addPane("docked", id as PaneType); }}
+              />
             )}
           </div>
           <button className="modular-exit" onClick={onExit}>
