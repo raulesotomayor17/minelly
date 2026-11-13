@@ -16740,3 +16740,114 @@ html:is([data-theme="white"],[data-theme="warm"],[data-theme="terracotta"],[data
 .canvas-module-item:hover .canvas-module-arrow { opacity: .8; transform: none; }
 .canvas-module-menu-foot { display: flex; align-items: center; gap: 6px; padding: 9px 14px 11px; border-top: 1px solid var(--border-soft); color: var(--text-muted); font-size: 9px; }
 .canvas-module-menu-foot kbd { padding: 1px 5px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-input); color: var(--text-secondary); font: inherit; }
+
+/* Cabecera editorial de panel bíblico en el Lienzo */
+.dock-pane-controls {
+  gap: 5px;
+  padding: 7px 9px;
+  border-bottom: 1px solid var(--border-soft);
+  background: linear-gradient(180deg, var(--bg-shell), color-mix(in srgb, var(--bg-shell) 82%, var(--bg-card)));
+}
+.dock-pane-controls > button {
+  min-width: 27px;
+  height: 27px;
+  padding: 0 7px;
+  border: 1px solid var(--border-soft);
+  border-radius: 6px;
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  transition: border-color 140ms ease, color 140ms ease, background 140ms ease;
+}
+.dock-pane-controls > button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+.dock-pane-controls > select {
+  height: 27px;
+  padding: 0 8px;
+  border: 1px solid var(--border-soft);
+  border-radius: 6px;
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-size: 10.5px;
+}
+.dock-link-set-picker {
+  gap: 2px;
+  margin-left: 4px;
+  padding: 2px;
+  border-color: var(--border-soft);
+  border-radius: 7px;
+  background: var(--bg-card);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.03);
+}
+.dock-link-set-picker button {
+  min-width: 23px;
+  height: 23px;
+  border-radius: 5px;
+  color: var(--text-muted);
+  font-size: 9px;
+  letter-spacing: .01em;
+  transition: color 120ms ease, background 120ms ease, transform 120ms ease;
+}
+.dock-link-set-picker button.active {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 1px 4px color-mix(in srgb, var(--accent) 40%, transparent);
+}
+.dock-link-set-picker button:hover:not(.active) { background: var(--accent-soft); color: var(--accent); }
+
+.dockv2-overlay .mod-passage-controls {
+  display: grid;
+  grid-template-columns: minmax(150px, 1fr) 62px 62px;
+  gap: 5px;
+  align-items: center;
+  margin: 8px 9px 10px;
+  padding: 4px;
+  border: 1px solid var(--border-soft);
+  border-radius: 9px;
+  background: var(--bg-card);
+  box-shadow: 0 1px 2px rgba(0,0,0,.12);
+}
+.dockv2-overlay .mod-passage-controls select,
+.dockv2-overlay .mod-passage-controls input {
+  width: 100%;
+  height: 32px;
+  padding: 0 9px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font-family: var(--ui);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .01em;
+}
+.dockv2-overlay .mod-passage-controls select:first-child {
+  font-family: var(--serif);
+  font-size: 13px;
+  font-weight: 600;
+}
+.dockv2-overlay .mod-passage-controls select:hover,
+.dockv2-overlay .mod-passage-controls input:hover { border-color: var(--border-strong); }
+.dockv2-overlay .mod-passage-controls select:focus,
+.dockv2-overlay .mod-passage-controls input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+.dockv2-overlay .mod-verse { padding: 6px 8px; border-radius: 6px; }
+.dockv2-overlay .mod-verse-number {
+  padding-top: 1px;
+  color: var(--accent);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .04em;
+}
+.dockv2-overlay .mod-verse-text {
+  color: var(--text-primary);
+  font-size: calc(var(--reader-font-size, 16px) * .92);
+  line-height: 1.66;
+}
+.dockv2-overlay .mod-verse.active {
+  background: color-mix(in srgb, var(--accent) 9%, var(--bg-card));
+  box-shadow: inset 2px 0 0 var(--accent);
+}
