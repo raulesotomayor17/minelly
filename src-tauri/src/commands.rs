@@ -1706,6 +1706,11 @@ pub fn export_document(
 }
 
 #[tauri::command]
+pub fn read_file_bytes(path: String) -> Result<Vec<u8>, String> {
+    std::fs::read(&path).map_err(message)
+}
+
+#[tauri::command]
 pub fn export_answer_pdf(path: String, title: String, blocks: Vec<crate::model::DocumentBlock>) -> Result<String, String> {
     let base = std::path::PathBuf::from(&path);
     let docx = crate::document_export::export_document(

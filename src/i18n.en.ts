@@ -676,4 +676,9 @@ export const EN_TRANSLATIONS: Record<string, string> = {
   "Renombrar capítulo": "Rename chapter",
   "Unir con el capítulo anterior": "Merge with previous chapter",
 
+  "eReader": "eReader",
+  "Abrir en eReader": "Open in eReader",
+  "Abrir archivo eBook": "Open eBook file",
+  "Índice": "Contents",
+
 };
