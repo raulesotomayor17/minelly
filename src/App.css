@@ -16966,3 +16966,38 @@ html:is([data-theme="white"],[data-theme="warm"],[data-theme="terracotta"],[data
 .card-reading-progress button { font-size: 10px; }
 @media (max-width: 1100px) { .resource-grid { grid-template-columns: repeat(auto-fill, minmax(220px,1fr)); } }
 @media (max-width: 700px) { .resource-grid { grid-template-columns: 1fr; } }
+
+/* Emblemas de módulo */
+.module-emblem { display: grid; place-items: center; flex: 0 0 38px; width: 38px; height: 38px; border: 1px solid var(--border-soft); border-radius: 10px; background: var(--bg-input); color: var(--accent); }
+.module-emblem.notes { color: #34d399; }
+.module-emblem.assistant { color: #a78bfa; }
+.module-emblem.ereader { color: #d97706; }
+.compare-title { display: flex; align-items: center; gap: 10px; }
+.compare-title > div { display: grid; gap: 1px; }
+.compare-module-emblem { display: grid; place-items: center; width: 38px; height: 38px; border: 1px solid var(--border-soft); border-radius: 10px; background: var(--bg-input); color: #60a5fa; }
+.compare-title h1 { font-size: 22px; letter-spacing: -.01em; }
+.ereader-title { display: flex; align-items: center; gap: 8px; }
+.ereader-title h1 { margin: 0; }
+
+/* Selector editorial de Biblia base */
+.compare-base-control {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 252px;
+  max-width: 360px;
+  padding: 4px 6px 4px 8px;
+  border: 1px solid color-mix(in srgb, #d4a72c 28%, var(--border));
+  border-radius: 8px;
+  background: color-mix(in srgb, #d4a72c 5%, var(--bg-card));
+}
+.compare-base-star { color: #d4a72c; font-size: 14px; }
+.compare-base-control label { display: grid; flex: 1; gap: 0; min-width: 0; }
+.compare-base-control small { color: var(--text-muted); font-size: 7.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+.compare-base-select { width: 100%; }
+.compare-base-select .custom-select { width: 100%; min-width: 0; height: 26px; padding: 2px 4px; border: 0; background: transparent; color: var(--text-primary); font-size: 11px; font-weight: 600; }
+.compare-column-head.is-base { background: color-mix(in srgb, #d4a72c 5%, var(--bg-card)); box-shadow: inset 0 2px 0 #d4a72c; }
+.compare-column-head.is-base .compare-base-badge { padding: 3px 7px; border: 1px solid color-mix(in srgb, #d4a72c 45%, transparent); border-radius: 999px; background: color-mix(in srgb, #d4a72c 13%, transparent); font-size: 8px; letter-spacing: .08em; text-transform: uppercase; }
+.compare-column-head .compare-version-name { color: var(--text-secondary); font-size: 9px; line-height: 1.35; white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.compare-column-head { min-height: 70px; }
+@media (max-width: 900px) { .compare-base-control { order: 3; width: 100%; max-width: none; } }

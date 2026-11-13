@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import SermonManager from "./SermonManager";
 import SermonBuilder from "./SermonBuilder";
+import ModuleEmblem from "./ModuleEmblem";
 import {
   emptySermonDocument,
   sermonToInput,
@@ -255,7 +256,7 @@ export default function SermonWorkspace({
       <header className="sermons-header">
         <div className="sermons-tabbar" role="tablist" aria-label="Pestañas de sermones">
           <div className="sermons-brand">
-            <span className="sermons-brand-mark">✎</span>
+            <span className="sermons-brand-mark"><ModuleEmblem id="sermons" size={18} /></span>
             <div>
               <strong>Sermones</strong>
               <small>Administrador y preparador</small>
