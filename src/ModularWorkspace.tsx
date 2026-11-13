@@ -209,7 +209,7 @@ const FONT_OPTIONS = [
   { value: "Inter", label: "Inter" },
 ];
 
-const TYPE_LABEL: Record<PaneType, string> = {
+export const TYPE_LABEL: Record<PaneType, string> = {
   bible: "Biblia",
   compare: "Comparador",
   interlinear: "Interlineal",
