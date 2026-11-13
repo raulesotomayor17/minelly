@@ -63,7 +63,8 @@ export default function EreaderWorkspace({ embedded = false, initialPath, initia
     const fg = chosen.fg || root.getPropertyValue("--text-primary").trim() || "#111827";
     let style = doc.getElementById("minelly-ereader-style") as HTMLStyleElement | null;
     if (!style) { style = doc.createElement("style"); style.id = "minelly-ereader-style"; doc.head.appendChild(style); }
-    style.textContent = `html,body{background:${bg}!important;color:${fg}!important;} body{font-family:${getComputedStyle(document.documentElement).getPropertyValue("--ereader-font") || "Georgia, serif"}!important;font-size:${fontSize}em!important;line-height:1.65!important;} a{color:inherit!important;}`;
+    const basePx = Math.round(17 * fontSize);
+    style.textContent = `html,body{background:${bg}!important;color:${fg}!important;} html{font-size:${basePx}px!important;} body{font-family:${getComputedStyle(document.documentElement).getPropertyValue("--ereader-font") || "Georgia, serif"}!important;font-size:1rem!important;line-height:1.65!important;padding:0 3%!important;} body p,body li,body div,body blockquote,body td,body th{font-size:1rem!important;line-height:1.65!important;} h1{font-size:1.8rem!important;} h2{font-size:1.45rem!important;} h3{font-size:1.2rem!important;} h4{font-size:1.05rem!important;} a{color:inherit!important;}`;
     doc.documentElement.style.background = bg;
     doc.body.style.color = fg;
   }
@@ -137,6 +138,7 @@ export default function EreaderWorkspace({ embedded = false, initialPath, initia
         event.detail.draw(Overlayer.highlight, { color: event.detail.annotation?.color ?? "#f5d36b" });
       });
       await view.open(book);
+      requestAnimationFrame(() => view.renderer?.expand?.());
       document.title = displayTitle || book.metadata?.title || name;
       setTitle(displayTitle || book.metadata?.title || name);
       setCurrentPath(filePath);
