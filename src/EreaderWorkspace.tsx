@@ -6,6 +6,18 @@ import { processBookChapterHtml } from "./bookProcessor";
 import { flattenToc } from "./vendor/foliate-js/toc.js";
 import { Overlayer } from "./vendor/foliate-js/overlayer.js";
 
+const EREADER_THEMES = [
+  { id: "inherit", label: "Tema actual", bg: "", fg: "" },
+  { id: "white", label: "Blanco papel", bg: "#ffffff", fg: "#111827" },
+  { id: "cream", label: "Crema editorial", bg: "#fbf7ee", fg: "#251f1a" },
+  { id: "sepia", label: "Sepia clásico", bg: "#f4ecd8", fg: "#2b2118" },
+  { id: "sand", label: "Arena papel", bg: "#f4efe6", fg: "#231b18" },
+  { id: "sage", label: "Verde salvia", bg: "#eff5f1", fg: "#11221a" },
+  { id: "blue", label: "Azul sereno", bg: "#eef2f6", fg: "#0f172a" },
+  { id: "slate", label: "Pizarra noche", bg: "#1c1c1f", fg: "#f4f4f5" },
+  { id: "oled", label: "Negro OLED", bg: "#000000", fg: "#f5f5f5" },
+] as const;
+
 interface Props {
   embedded?: boolean;
   initialPath?: string;
@@ -24,7 +36,7 @@ export default function EreaderWorkspace({ embedded = false, initialPath, initia
   const [toc, setToc] = useState<Array<{ label: string; href: string; depth: number }>>([]);
   const [tocOpen, setTocOpen] = useState(true);
   const [fraction, setFraction] = useState(0);
-  const [theme, setTheme] = useState("inherit");
+  const [theme, setTheme] = useState<string>("inherit");
   const [font, setFont] = useState("Literata");
   const [fontSize, setFontSize] = useState(1);
   const [error, setError] = useState("");
@@ -43,9 +55,22 @@ export default function EreaderWorkspace({ embedded = false, initialPath, initia
     try { return JSON.parse(localStorage.getItem("minelly.ereader-locations.v1") ?? "{}"); } catch { return {}; }
   }, []);
 
+  function applyReaderStyle(doc: Document) {
+    const chosen = EREADER_THEMES.find((item) => item.id === theme) ?? EREADER_THEMES[0];
+    const root = getComputedStyle(document.documentElement);
+    const bg = chosen.bg || root.getPropertyValue("--bg-card").trim() || "#ffffff";
+    const fg = chosen.fg || root.getPropertyValue("--text-primary").trim() || "#111827";
+    let style = doc.getElementById("minelly-ereader-style") as HTMLStyleElement | null;
+    if (!style) { style = doc.createElement("style"); style.id = "minelly-ereader-style"; doc.head.appendChild(style); }
+    style.textContent = `html,body{background:${bg}!important;color:${fg}!important;} body{font-family:${getComputedStyle(document.documentElement).getPropertyValue("--ereader-font") || "Georgia, serif"}!important;font-size:${fontSize}em!important;line-height:1.65!important;} a{color:inherit!important;}`;
+    doc.documentElement.style.background = bg;
+    doc.body.style.color = fg;
+  }
+
   async function loadFile(filePath: string, displayTitle?: string) {
     setError("");
     try {
+      await invoke("import_folder", { path: filePath }).catch(() => undefined);
       const bytes = await invoke<number[]>("read_file_bytes", { path: filePath });
       const name = filePath.split(/[\\/]/).pop() || "ebook.epub";
       const file = new File([new Uint8Array(bytes)], name);
@@ -64,6 +89,7 @@ export default function EreaderWorkspace({ embedded = false, initialPath, initia
           const processed = processBookChapterHtml(doc.body.innerHTML);
           doc.body.innerHTML = processed.html;
         } catch { /* conservar el DOM original */ }
+        applyReaderStyle(doc);
         doc.addEventListener("mouseup", () => {
           const sel = doc.getSelection();
           if (!sel || sel.isCollapsed || !sel.rangeCount) { setSelection(null); return; }
@@ -128,6 +154,11 @@ export default function EreaderWorkspace({ embedded = false, initialPath, initia
       setError(String(err));
     }
   }
+
+  useEffect(() => {
+    const contents = viewRef.current?.renderer?.getContents?.() ?? [];
+    for (const item of contents) if (item.doc) applyReaderStyle(item.doc);
+  }, [theme, font, fontSize]);
 
   useEffect(() => {
     if (initialPath) void loadFile(initialPath, initialTitle);
@@ -227,8 +258,8 @@ export default function EreaderWorkspace({ embedded = false, initialPath, initia
           <button type="button" onClick={addBookmark}>Marcador</button>
           <button type="button" onClick={() => void addNote()}>Nota</button>
           <button type="button" onClick={() => void toggleFullscreen()}>Pantalla completa</button>
-          <select value={theme} onChange={(event) => setTheme(event.target.value)} aria-label="Tema del eReader">
-            <option value="inherit">Tema Minelly</option><option value="light">Claro</option><option value="sepia">Sepia</option><option value="dark">Oscuro</option>
+          <select value={theme} onChange={(event) => setTheme(event.target.value)} aria-label="Color del lienzo de lectura">
+            {EREADER_THEMES.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
           </select>
           <select value={font} onChange={(event) => setFont(event.target.value)} aria-label="Tipografía">
             <option>Literata</option><option>Crimson Pro</option><option>Georgia</option><option>Inter</option>
@@ -240,7 +271,7 @@ export default function EreaderWorkspace({ embedded = false, initialPath, initia
           {!embedded && <button type="button" onClick={onClose}>Cerrar</button>}
         </div>
       </header>
-      <div className={`ereader-body theme-${theme}`}>
+      <div className={`ereader-body theme-${theme === "inherit" ? "inherit" : "custom"}`}>
         {tocOpen && <aside className="ereader-toc">
           <div className="ereader-toc-tabs">
             <button type="button" className={panel === "toc" ? "active" : ""} onClick={() => setPanel("toc")}>Índice</button>

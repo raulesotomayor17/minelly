@@ -227,6 +227,7 @@ pub fn import_epub(catalog: &mut Catalog, path: &Path) -> Result<ImportReport> {
     resource.entry_count = parsed.chapters.len() as i64;
     catalog.upsert_resource(&resource)?;
 
+    let _ = crate::indexer::index_resource(catalog.connection_mut(), &resource.id);
     Ok(ImportReport {
         resource,
         warnings: parsed.warnings,
