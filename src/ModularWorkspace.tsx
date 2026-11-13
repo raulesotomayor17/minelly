@@ -1650,7 +1650,15 @@ export function PaneView({
         )}
 
         {!needsResourcePicker && pane.resourceType === "assistant" && (
-          <StudyAssistant embedded onClose={() => undefined} onOpenContext={() => undefined} />
+          <StudyAssistant
+            embedded
+            onClose={() => undefined}
+            onOpenContext={(context) => onReference(
+              pane.id,
+              { book: context.book || 1, chapter: context.chapter || 1, verse: context.verse || 1 },
+              "explicit_navigation",
+            )}
+          />
         )}
 
         {!needsResourcePicker && pane.resourceType === "sermons" && (
@@ -1664,7 +1672,14 @@ export function PaneView({
         )}
 
         {!needsResourcePicker && pane.resourceType === "ereader" && (
-          <EreaderWorkspace embedded resources={resources} onClose={() => undefined} />
+          <EreaderWorkspace
+            embedded
+            resources={resources}
+            onClose={() => undefined}
+            onOpenScripture={(refBook, refChapter, refVerse) =>
+              onReference(pane.id, { book: refBook, chapter: refChapter, verse: refVerse }, "explicit_navigation")
+            }
+          />
         )}
 
         {!needsResourcePicker && pane.resourceType === "bible" && (
