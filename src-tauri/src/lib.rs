@@ -52,8 +52,19 @@ pub fn run() {
             if !db_path.exists() {
                 let mut candidates = Vec::new();
                 if let Ok(resource_dir) = app.path().resource_dir() {
-                    candidates.push(resource_dir.join("clean_catalog.sqlite.gz"));
-                    candidates.push(resource_dir.join("premium_catalog.sqlite.gz"));
+                    for folder in [resource_dir.clone(), resource_dir.join("resources")] {
+                        candidates.push(folder.join("clean_catalog.sqlite.gz"));
+                        candidates.push(folder.join("premium_catalog.sqlite.gz"));
+                    }
+                }
+                if let Ok(exe) = std::env::current_exe() {
+                    if let Some(bin_dir) = exe.parent() {
+                        for product in ["Minelly Clean", "Minelly Premium", "Minelly"] {
+                            let resources = bin_dir.join("../lib").join(product).join("resources");
+                            candidates.push(resources.join("clean_catalog.sqlite.gz"));
+                            candidates.push(resources.join("premium_catalog.sqlite.gz"));
+                        }
+                    }
                 }
                 candidates.push(PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("resources/clean_catalog.sqlite.gz"));
                 candidates.push(PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("resources/premium_catalog.sqlite.gz"));
