@@ -1,0 +1,61 @@
+name: Proponer una función
+description: Una idea para mejorar el estudio, la lectura o la accesibilidad
+title: "[Idea] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Antes de escribir, revisa si ya existe una propuesta similar. Explica el
+        problema antes que la solución técnica.
+  - type: textarea
+    id: problem
+    attributes:
+      label: ¿Qué problema resuelve?
+      description: Describe la situación de estudio o de uso que hoy resulta difícil.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Propuesta
+      description: ¿Cómo te gustaría que funcionara? Si hay alternativas, menciónalas.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Área
+      options:
+        - Lectura de la Biblia
+        - Biblioteca e importación
+        - Comentarios y diccionarios
+        - Comparador / interlineal
+        - Lienzo y entornos
+        - Notas y anclajes
+        - Libros y PBB
+        - Sermones y diapositivas
+        - Búsqueda
+        - Voz / TTS
+        - Asistente de IA
+        - Accesibilidad
+        - Rendimiento
+        - Documentación
+        - Otra
+    validations:
+      required: true
+  - type: textarea
+    id: data
+    attributes:
+      label: Datos y privacidad
+      description: Si la función usa red o IA, indica qué se enviaría y cómo se puede usar sin conexión.
+    validations:
+      required: false
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: Confirmación
+      options:
+        - label: No incluyo módulos, textos ni imágenes con derechos de autor.
+          required: true
+        - label: Entiendo que las propuestas se revisan según su alcance y mantenimiento.
+          required: true
