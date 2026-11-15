@@ -106,6 +106,15 @@ npm run tauri build
 
 Los artefactos quedan en `src-tauri\target\release\bundle\`.
 
+Para generar solo el instalador NSIS:
+
+```powershell
+npm run tauri build -- --bundles nsis
+```
+
+El workflow manual `.github/workflows/package-windows.yml` genera ese instalador
+en GitHub Actions y lo sube como artefacto `minelly-windows-installer`.
+
 ## macOS
 
 Instala Xcode Command Line Tools:
