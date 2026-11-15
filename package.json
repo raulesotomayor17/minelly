@@ -3,6 +3,19 @@
   "private": true,
   "version": "0.2.0",
   "description": "Minelly: estudio b\u00edblico local y multiplataforma",
+  "license": "MIT",
+  "author": "Ra\u00fal Soto (https://github.com/raulesotomayor17)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/raulesotomayor17/minelly.git"
+  },
+  "homepage": "https://github.com/raulesotomayor17/minelly",
+  "bugs": {
+    "url": "https://github.com/raulesotomayor17/minelly/issues"
+  },
+  "engines": {
+    "node": ">=22"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite",
