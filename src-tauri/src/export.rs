@@ -335,8 +335,8 @@ fn build_pptx(path: &Path, slides: &[PreparedSlide]) -> Result<()> {
         "docProps/core.xml",
         format!(
             "{XML_HEADER}<cp:coreProperties xmlns:cp=\"http://schemas.openxmlformats.org/package/2006/metadata/core-properties\" xmlns:dc=\"http://purl.org/dc/elements/1.1/\" xmlns:dcterms=\"http://purl.org/dc/terms/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">\
-             <dc:title>Teoamoxtli · Sermón</dc:title>\
-             <dc:creator>Teoamoxtli</dc:creator>\
+             <dc:title>Minelly · Sermón</dc:title>\
+             <dc:creator>Minelly</dc:creator>\
              </cp:coreProperties>"
         )
         .as_bytes(),
@@ -347,7 +347,7 @@ fn build_pptx(path: &Path, slides: &[PreparedSlide]) -> Result<()> {
         "docProps/app.xml",
         format!(
             "{XML_HEADER}<Properties xmlns=\"http://schemas.openxmlformats.org/officeDocument/2006/extended-properties\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\">\
-             <Application>Teoamoxtli</Application>\
+             <Application>Minelly</Application>\
              <PresentationFormat>Widescreen</PresentationFormat>\
              <Slides>{slide_count}</Slides>\
              </Properties>"
@@ -787,7 +787,7 @@ fn layout_xml() -> String {
 
 fn theme_xml() -> String {
     format!(
-        "{XML_HEADER}<a:theme xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" name=\"Teoamoxtli\">\
+        "{XML_HEADER}<a:theme xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" name=\"Minelly\">\
          <a:themeElements>\
          <a:clrScheme name=\"Teo\">\
          <a:dk1><a:sysClr val=\"windowText\" lastClr=\"000000\"/></a:dk1>\
@@ -1830,7 +1830,7 @@ fn odp_text_frame(
 fn odp_meta_xml(title: &str) -> String {
     format!(
         "{XML_HEADER}<office:document-meta xmlns:office=\"urn:oasis:names:tc:opendocument:xmlns:office:1.0\" xmlns:meta=\"urn:oasis:names:tc:opendocument:xmlns:meta:1.0\" xmlns:dc=\"http://purl.org/dc/elements/1.1/\" office:version=\"1.2\">\
-         <office:meta><dc:title>{}</dc:title><meta:generator>Teoamoxtli</meta:generator></office:meta></office:document-meta>",
+         <office:meta><dc:title>{}</dc:title><meta:generator>Minelly</meta:generator></office:meta></office:document-meta>",
         xml_escape(title)
     )
 }

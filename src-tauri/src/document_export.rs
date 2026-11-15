@@ -143,14 +143,14 @@ fn root_rels_docx() -> String {
 fn core_props(title: &str) -> String {
     format!(
         "{XML_HEADER}<cp:coreProperties xmlns:cp=\"http://schemas.openxmlformats.org/package/2006/metadata/core-properties\" xmlns:dc=\"http://purl.org/dc/elements/1.1/\" xmlns:dcterms=\"http://purl.org/dc/terms/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">\
-         <dc:title>{}</dc:title><dc:creator>Teoamoxtli</dc:creator></cp:coreProperties>",
+         <dc:title>{}</dc:title><dc:creator>Minelly</dc:creator></cp:coreProperties>",
         xml_escape(title)
     )
 }
 
 fn app_props() -> String {
     format!(
-        "{XML_HEADER}<Properties xmlns=\"http://schemas.openxmlformats.org/officeDocument/2006/extended-properties\"><Application>Teoamoxtli</Application></Properties>"
+        "{XML_HEADER}<Properties xmlns=\"http://schemas.openxmlformats.org/officeDocument/2006/extended-properties\"><Application>Minelly</Application></Properties>"
     )
 }
 
@@ -233,7 +233,7 @@ fn build_odt(path: &Path, title: &str, blocks: &[DocumentBlock]) -> Result<()> {
 fn meta_xml(title: &str) -> String {
     format!(
         "{XML_HEADER}<office:document-meta xmlns:office=\"urn:oasis:names:tc:opendocument:xmlns:office:1.0\" xmlns:meta=\"urn:oasis:names:tc:opendocument:xmlns:meta:1.0\" xmlns:dc=\"http://purl.org/dc/elements/1.1/\" office:version=\"1.2\">\
-         <office:meta><dc:title>{}</dc:title><meta:generator>Teoamoxtli</meta:generator></office:meta></office:document-meta>",
+         <office:meta><dc:title>{}</dc:title><meta:generator>Minelly</meta:generator></office:meta></office:document-meta>",
         xml_escape(title)
     )
 }
