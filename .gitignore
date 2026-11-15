@@ -44,6 +44,7 @@ capturas/
 # Local runtime, temporary files and private backups
 .run/
 .git-backup/
+.tools/
 .preview/
 
 # Internal development diary and private/third-party agent material
