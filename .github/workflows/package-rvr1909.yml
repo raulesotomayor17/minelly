@@ -1,6 +1,8 @@
 name: Minelly RVR1909 installers
 
 on:
+  push:
+    branches: [edition/rvr1909]
   workflow_dispatch:
 
 permissions:
