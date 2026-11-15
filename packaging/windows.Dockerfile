@@ -1,4 +1,4 @@
-FROM localhost/teoamoxtli-f44-builder:latest
+FROM localhost/minelly-f44-builder:latest
 RUN dnf -y install clang llvm lld mingw64-nsis zip unzip && dnf clean all
 RUN curl -L --fail -o /tmp/nsis.zip 'https://sourceforge.net/projects/nsis/files/NSIS%203/3.11/nsis-3.11.zip/download' \
     && unzip -q /tmp/nsis.zip -d /tmp/nsis \
