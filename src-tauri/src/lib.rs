@@ -55,13 +55,20 @@ pub fn run() {
             if !db_path.exists() {
                 let mut candidates = Vec::new();
                 if let Ok(resource_dir) = app.path().resource_dir() {
-                    for folder in [resource_dir.clone(), resource_dir.join("resources")] {
+                    for folder in [
+                        resource_dir.clone(),
+                        resource_dir.join("resources"),
+                        resource_dir.join("resources/rvr1909"),
+                    ] {
                         candidates.push(folder.join("clean_catalog.sqlite.gz"));
                         candidates.push(folder.join("premium_catalog.sqlite.gz"));
                     }
                 }
                 if let Ok(exe) = std::env::current_exe() {
                     if let Some(bin_dir) = exe.parent() {
+                        let edition = bin_dir.join("resources/rvr1909");
+                        candidates.push(edition.join("clean_catalog.sqlite.gz"));
+                        candidates.push(edition.join("premium_catalog.sqlite.gz"));
                         for product in ["Minelly Clean", "Minelly Premium", "Minelly"] {
                             let resources = bin_dir.join("../lib").join(product).join("resources");
                             candidates.push(resources.join("clean_catalog.sqlite.gz"));
@@ -71,6 +78,7 @@ pub fn run() {
                 }
                 candidates.push(PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("resources/clean_catalog.sqlite.gz"));
                 candidates.push(PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("resources/premium_catalog.sqlite.gz"));
+                candidates.push(PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("resources/rvr1909/clean_catalog.sqlite.gz"));
                 if let Some(bundle) = candidates.into_iter().find(|path| path.is_file()) {
                     if let Some(parent) = Path::new(&db_path).parent() {
                         let _ = std::fs::create_dir_all(parent);
@@ -113,8 +121,14 @@ pub fn run() {
                     .join("resources/interlinear_factory.sqlite.gz"),
             ];
             if let Ok(resource_dir) = app.path().resource_dir() {
+                factory_candidates.push(resource_dir.join("resources/rvr1909/interlinear_factory.sqlite.gz"));
                 factory_candidates.push(resource_dir.join("resources/interlinear_factory.sqlite.gz"));
                 factory_candidates.push(resource_dir.join("interlinear_factory.sqlite.gz"));
+            }
+            if let Ok(exe) = std::env::current_exe() {
+                if let Some(parent) = exe.parent() {
+                    factory_candidates.push(parent.join("resources/rvr1909/interlinear_factory.sqlite.gz"));
+                }
             }
             if let Some(factory_path) = factory_candidates.into_iter().find(|path| path.is_file()) {
                 if let Err(error) = catalog.seed_factory_interlinear(&factory_path) {

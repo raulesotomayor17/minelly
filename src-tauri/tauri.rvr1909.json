@@ -1,0 +1,13 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Minelly RVR1909",
+  "identifier": "com.minelly.rvr1909",
+  "bundle": {
+    "resources": [
+      "resources/rvr1909/clean_catalog.sqlite.gz",
+      "resources/rvr1909/interlinear_factory.sqlite.gz"
+    ],
+    "shortDescription": "Minelly RVR1909: Biblia Reina-Valera 1909 con interlineal",
+    "longDescription": "Edición de Minelly que incluye la Reina-Valera 1909 y los datos del interlineal hebreo/griego. No incluye NTV, RVR1960 ni comentarios de terceros."
+  }
+}
