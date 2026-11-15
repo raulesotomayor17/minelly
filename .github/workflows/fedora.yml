@@ -13,7 +13,7 @@ concurrency:
 jobs:
   build-rpm:
     runs-on: ubuntu-latest
-    container: fedora:43
+    container: fedora:44
     timeout-minutes: 60
     steps:
       - name: Install git

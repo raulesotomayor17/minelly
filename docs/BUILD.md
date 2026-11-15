@@ -154,10 +154,11 @@ permiso.
 
 ## CI
 
-- `.github/workflows/build.yml`: compila en Windows, Ubuntu 24.04 y macOS con
-  `--no-bundle`.
-- `.github/workflows/fedora.yml`: compila un RPM en `fedora:43` y lo sube como
-  artefacto.
+- `.github/workflows/build.yml`: compila en Windows, Ubuntu 24.04, macOS y
+  Fedora 44 con `--no-bundle`.
+- `.github/workflows/fedora.yml`: compila un RPM en `fedora:44` y lo sube como
+  artefacto. Se lanza manualmente porque empaquetar un RPM en cada push es más
+  lento y no siempre es necesario.
 
 Los workflows no incluyen datos ni instaladores firmados.
 
