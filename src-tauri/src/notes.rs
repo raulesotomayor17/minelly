@@ -372,8 +372,25 @@ pub fn move_note(conn: &Connection, id: &str, notebook_id: Option<&str>, sort_or
     Ok(())
 }
 
+/// Algunas vistas envían el documento TipTap ya serializado como texto.
+/// Se normaliza para que la base guarde siempre un objeto JSON.
+fn normalized_content(value: &Value) -> Value {
+    if let Value::String(raw) = value {
+        let trimmed = raw.trim();
+        if trimmed.starts_with('{') || trimmed.starts_with('[') {
+            if let Ok(parsed) = serde_json::from_str::<Value>(trimmed) {
+                return parsed;
+            }
+        }
+    }
+    value.clone()
+}
+
 pub fn create_note(conn: &Connection, input: &NoteInput) -> Result<Note> {
-    let id = Uuid::new_v4().to_string();
+    insert_note(conn, &Uuid::new_v4().to_string(), input)
+}
+
+fn insert_note(conn: &Connection, id: &str, input: &NoteInput) -> Result<Note> {
     let now = now_epoch();
     let notebook = input
         .notebook_id
@@ -390,16 +407,37 @@ pub fn create_note(conn: &Connection, input: &NoteInput) -> Result<Note> {
             } else {
                 input.title.trim()
             },
-            serde_json::to_string(&input.content_json)?,
+            serde_json::to_string(&normalized_content(&input.content_json))?,
             now,
             now
         ],
     )?;
-    set_note_tags(conn, &id, &input.tags)?;
-    set_note_anchors(conn, &id, &input.anchors)?;
-    sync_note_links(conn, &id)?;
-    crate::indexer_v2::sync_note_fts(conn, &id)?;
-    get_note(conn, &id)?.context("no se pudo crear la nota")
+    set_note_tags(conn, id, &input.tags)?;
+    set_note_anchors(conn, id, &input.anchors)?;
+    sync_note_links(conn, id)?;
+    crate::indexer_v2::sync_note_fts(conn, id)?;
+    get_note(conn, id)?.context("no se pudo crear la nota")
+}
+
+/// Crea o actualiza una nota según el `id` recibido. Es el punto de entrada de
+/// las notas flotantes, del panel lateral y de los paneles del Lienzo.
+pub fn upsert_note(conn: &Connection, input: &NoteInput) -> Result<Note> {
+    let requested = input
+        .id
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty());
+
+    if let Some(id) = requested {
+        let existing: Option<String> = conn
+            .query_row("SELECT id FROM notes WHERE id = ?1", [id], |row| row.get(0))
+            .optional()?;
+        return match existing {
+            Some(_) => update_note(conn, id, input),
+            None => insert_note(conn, id, input),
+        };
+    }
+    create_note(conn, input)
 }
 
 pub fn update_note(conn: &Connection, id: &str, input: &NoteInput) -> Result<Note> {
@@ -418,7 +456,7 @@ pub fn update_note(conn: &Connection, id: &str, input: &NoteInput) -> Result<Not
             } else {
                 input.title.trim()
             },
-            serde_json::to_string(&input.content_json)?,
+            serde_json::to_string(&normalized_content(&input.content_json))?,
             now_epoch()
         ],
     )?;

@@ -26,14 +26,35 @@ dist-ssr
 # Build, caches and distribution artifacts
 .xwin-cache/
 dist-packages/
-src-tauri/target/
+src-tauri/target*/
+src-tauri/gen/
 src-tauri/resources/*.sqlite
 src-tauri/resources/*.sqlite.gz
+packaging/windows/payload/resources/*.sqlite*
 data/
 capturas/
 *.rpm
 *.exe
 *.zip
+
+# Python
+**/__pycache__/
+*.py[cod]
+
+# Local runtime, temporary files and private backups
+.run/
+.git-backup/
+.preview/
+
+# Internal development diary and private/third-party agent material
+BITACORA.md
+.agents/
+
+# Local-only packaging variants and helper scripts
+src-tauri/tauri.clean.json
+src-tauri/tauri.premium.json
+src-tauri/tauri.windows-clean.json
+ver-app.sh
 
 # Biblioteca descargada localmente
 Recursos para biblioteca/

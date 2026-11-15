@@ -19,6 +19,11 @@ import CanvasModuleMenu from "./CanvasModuleMenu";
 import SermonWorkspace from "./SermonWorkspace";
 import { processBookChapterHtml } from "./bookProcessor";
 import InterlinearVerse, { type InterlinearVerseData } from "./InterlinearVerse";
+import {
+  readCitationTarget,
+  setCitationTarget,
+  subscribeCitationTarget,
+} from "./citationTarget";
 
 export type PaneType =
   | "bible"
@@ -223,6 +228,18 @@ export const TYPE_LABEL: Record<PaneType, string> = {
   sermons: "Sermones",
 };
 
+/** Paneles cuyas citas deben respetar la Biblia destino antes que el enlace. */
+const CITATION_SOURCE_TYPES: ReadonlySet<PaneType> = new Set<PaneType>([
+  "book",
+  "ereader",
+  "commentary",
+  "dictionary",
+  "notes",
+  "search",
+  "assistant",
+  "sermons",
+]);
+
 function nextId() {
   return globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
 }
@@ -402,15 +419,15 @@ function buildPresetTree(
           type: "split",
           id: nextId(),
           direction: "vertical",
-          ratio: 0.58,
-          children: [bible(0), commentary()],
+          ratio: 0.54,
+          children: [bible(0), bible(1)],
         },
         {
           type: "split",
           id: nextId(),
           direction: "vertical",
-          ratio: 0.58,
-          children: [book(), dictionary()],
+          ratio: 0.54,
+          children: [commentary(), book()],
         },
       ],
     };
@@ -765,6 +782,8 @@ export function PaneView({
   programmatic = false,
   onFloat,
   onDock,
+  citationTarget = false,
+  onToggleCitationTarget,
 }: {
   pane: PaneNode;
   canClose: boolean;
@@ -796,6 +815,8 @@ export function PaneView({
   programmatic?: boolean;
   onFloat?: (paneId: string) => void;
   onDock?: (paneId: string, side: "left" | "right") => void;
+  citationTarget?: boolean;
+  onToggleCitationTarget?: (paneId: string) => void;
 }) {
   const [passage, setPassage] = useState<Passage | null>(null);
   const [comparePassages, setComparePassages] = useState<Record<string, Passage>>({});
@@ -1467,6 +1488,31 @@ export function PaneView({
                 ? `Notas · ${referenceLabel}`
                 : "Biblioteca completa"}
           </span>
+        )}
+        {pane.resourceType === "bible" && pane.state.resourceId && onToggleCitationTarget && (
+          <button
+            type="button"
+            className={`mod-citation-target${citationTarget ? " active" : ""}`}
+            aria-pressed={citationTarget}
+            onClick={() => onToggleCitationTarget(pane.id)}
+            title={
+              citationTarget
+                ? "Esta Biblia recibe las citas de libros, EPUB y comentarios. Pulsa para quitar el destino."
+                : "Destino de la referencia: recibir aquí las citas bíblicas de libros, EPUB y comentarios."
+            }
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <circle cx="12" cy="12" r="6.4" stroke="currentColor" strokeWidth="1.7" />
+              <circle cx="12" cy="12" r="2.1" fill="currentColor" />
+              <path
+                d="M12 2.4v2.6M12 19v2.6M2.4 12H5M19 12h2.6"
+                stroke="currentColor"
+                strokeWidth="1.7"
+                strokeLinecap="round"
+              />
+            </svg>
+            <span>{citationTarget ? "Destino activo" : "Destino"}</span>
+          </button>
         )}
         <select
           className="mod-link-select"
@@ -2405,6 +2451,9 @@ export default function ModularWorkspace({
   const [programmaticPanes, setProgrammaticPanes] = useState<Set<string>>(
     () => new Set(),
   );
+  const [citationTargetId, setCitationTargetIdState] = useState<string | null>(
+    () => readCitationTarget(),
+  );
   const syncTimerRef = useRef<number | null>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
   const [profiles, setProfiles] = useState<LayoutProfile[]>(loadProfiles);
@@ -2452,11 +2501,36 @@ export default function ModularWorkspace({
     [],
   );
 
+  useEffect(
+    () => subscribeCitationTarget(() => setCitationTargetIdState(readCitationTarget())),
+    [],
+  );
+
+  useEffect(() => {
+    if (!citationTargetId) return;
+    const armed = allPaneValues().find((pane) => pane.id === citationTargetId);
+    if (!armed || armed.resourceType !== "bible") setCitationTarget(null);
+  }, [citationTargetId, tree, floating]);
+
   const dockedPanes = collectPanes(tree);
   const activePanes = [...dockedPanes, ...floating.map((window) => window.pane)];
 
   function allPaneValues() {
     return [...collectPanes(tree), ...floating.map((window) => window.pane)];
+  }
+
+  function toggleCitationTarget(paneId: string) {
+    const next = readCitationTarget() === paneId ? null : paneId;
+    setCitationTarget(next);
+    if (!next) {
+      setStatus("Destino de citas desactivado: los paneles vuelven a seguir su enlace.");
+      return;
+    }
+    const pane = allPaneValues().find((item) => item.id === paneId);
+    const resource = resources.find((item) => item.id === pane?.state.resourceId);
+    setStatus(
+      `${resource?.abbreviation || resource?.title || "Biblia"} recibe ahora las citas de libros, EPUB y comentarios.`,
+    );
   }
 
   function applyPaneChange(paneId: string, updater: (pane: PaneNode) => PaneNode) {
@@ -2494,6 +2568,39 @@ export default function ModularWorkspace({
   ) {
     const target = allPaneValues().find((pane) => pane.id === paneId);
     if (!target) return;
+
+    // Cita en un libro/EPUB/comentario: va solo a la Biblia marcada como destino.
+    const destinationId = readCitationTarget();
+    const destination =
+      destinationId && destinationId !== paneId
+        ? allPaneValues().find(
+            (pane) => pane.id === destinationId && pane.resourceType === "bible",
+          )
+        : undefined;
+    if (destination && CITATION_SOURCE_TYPES.has(target.resourceType)) {
+      if (syncTimerRef.current) window.clearTimeout(syncTimerRef.current);
+      setProgrammaticPanes(new Set([destination.id]));
+      const updater = (pane: PaneNode) =>
+        pane.id === paneId || pane.id === destination.id
+          ? { ...pane, state: { ...pane.state, reference: { ...reference } } }
+          : pane;
+      setTree((current) => mapPanes(current, updater));
+      setFloating((current) =>
+        current.map((window) => ({ ...window, pane: updater(window.pane) })),
+      );
+      syncTimerRef.current = window.setTimeout(() => {
+        setProgrammaticPanes(new Set());
+        syncTimerRef.current = null;
+      }, 500);
+      const resource = resources.find(
+        (item) => item.id === destination.state.resourceId,
+      );
+      setStatus(
+        `Cita enviada a ${resource?.abbreviation || resource?.title || "la Biblia destino"}: ${bookName(books, reference.book)} ${reference.chapter}:${reference.verse}.`,
+      );
+      return;
+    }
+
     const event: LinkSyncEvent = {
       sourcePaneId: paneId,
       linkSet: target.linkSet,
@@ -3246,6 +3353,8 @@ export default function ModularWorkspace({
         programmatic={programmaticPanes.has(node.id)}
         onFloat={floatPane}
         onDock={dockPane}
+        citationTarget={citationTargetId === node.id}
+        onToggleCitationTarget={toggleCitationTarget}
       />
     );
   }
@@ -3516,6 +3625,8 @@ export default function ModularWorkspace({
               onDragStart={startPaneDrag}
               onOpenStrong={handleOpenStrongInWorkspace}
               onDock={dockPane}
+              citationTarget={citationTargetId === window.pane.id}
+              onToggleCitationTarget={toggleCitationTarget}
             />
             <div
               className="floating-resizer"

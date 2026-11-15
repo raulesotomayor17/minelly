@@ -9,6 +9,8 @@ declare module "*/foliate-js/view.js" {
     close(): void;
     goToTextStart(): Promise<void>;
     resolveCFI(cfi: string): any;
+    lastLocation: any;
+    goToFraction(fraction: number): Promise<void>;
     addAnnotation(annotation: any): Promise<any>;
     getCFI(index: number, range: Range): string;
   }

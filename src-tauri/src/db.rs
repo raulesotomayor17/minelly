@@ -617,6 +617,22 @@ impl Catalog {
         Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
     }
 
+    pub fn epub_chapters_full(&self, resource_id: &str) -> Result<Vec<EpubChapter>> {
+        let mut stmt = self.connection.prepare(
+            "SELECT spine, title, href, html FROM epub_chapters
+             WHERE resource_id = ?1 ORDER BY spine",
+        )?;
+        let rows = stmt.query_map([resource_id], |row| {
+            Ok(EpubChapter {
+                spine: row.get(0)?,
+                title: row.get(1)?,
+                href: row.get(2)?,
+                html: row.get(3)?,
+            })
+        })?;
+        Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
+    }
+
     pub fn get_epub_chapter(
         &self,
         resource_id: &str,

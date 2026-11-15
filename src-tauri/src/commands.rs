@@ -477,6 +477,15 @@ pub fn note_update(
 }
 
 #[tauri::command]
+pub fn note_upsert(
+    state: State<'_, AppState>,
+    input: NoteInput,
+) -> Result<Note, String> {
+    let catalog = state.catalog.lock().map_err(message)?;
+    crate::notes::upsert_note(catalog.connection(), &input).map_err(message)
+}
+
+#[tauri::command]
 pub fn notebook_create_node(
     state: State<'_, AppState>,
     name: String,
@@ -672,6 +681,64 @@ pub fn reconstruct_book_structure(state: State<'_, AppState>, resource_id: Strin
     }
     catalog.connection().execute("UPDATE resources SET entry_count=?1 WHERE id=?2", rusqlite::params![chapters.len() as i64, resource_id]).map_err(message)?;
     catalog.get_resource(&resource_id).map_err(message)?.ok_or_else(|| "No se encontró el libro.".to_string())
+}
+
+#[tauri::command]
+pub fn book_restore_from_source(
+    state: State<'_, AppState>,
+    resource_id: String,
+) -> Result<Vec<crate::model::EpubChapterSummary>, String> {
+    let mut catalog = state.catalog.lock().map_err(message)?;
+    crate::library::restore_epub_from_source(&mut catalog, &resource_id).map_err(message)
+}
+
+#[tauri::command]
+pub fn search_in_resource(
+    state: State<'_, AppState>,
+    resource_id: String,
+    query: String,
+    limit: Option<usize>,
+) -> Result<Vec<crate::resource_search::ResourceMatch>, String> {
+    let catalog = state.catalog.lock().map_err(message)?;
+    crate::resource_search::search_resource(&catalog, &resource_id, &query, limit.unwrap_or(120))
+        .map_err(message)
+}
+
+#[tauri::command]
+pub fn book_typeset_digest(
+    state: State<'_, AppState>,
+    resource_id: String,
+) -> Result<crate::typeset::BookDigest, String> {
+    let catalog = state.catalog.lock().map_err(message)?;
+    crate::typeset::digest(&catalog, &resource_id).map_err(message)
+}
+
+#[tauri::command]
+pub fn book_typeset_apply(
+    state: State<'_, AppState>,
+    resource_id: String,
+    plan: crate::typeset::TypesetPlan,
+) -> Result<crate::typeset::ApplyReport, String> {
+    let mut catalog = state.catalog.lock().map_err(message)?;
+    crate::typeset::apply(&mut catalog, &resource_id, &plan).map_err(message)
+}
+
+#[tauri::command]
+pub fn book_typeset_undo(
+    state: State<'_, AppState>,
+    backup_path: String,
+) -> Result<usize, String> {
+    let mut catalog = state.catalog.lock().map_err(message)?;
+    crate::typeset::undo(&mut catalog, &backup_path).map_err(message)
+}
+
+#[tauri::command]
+pub fn scan_book_structures(
+    state: State<'_, AppState>,
+    force: Option<bool>,
+) -> Result<Vec<crate::library::BookStructureReport>, String> {
+    let mut catalog = state.catalog.lock().map_err(message)?;
+    Ok(crate::library::scan_book_structures(&mut catalog, force.unwrap_or(false)))
 }
 
 #[tauri::command]

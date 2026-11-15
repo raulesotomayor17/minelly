@@ -1,0 +1,239 @@
+/* ==========================================================================
+   BUSCADOR DENTRO DEL RECURSO ABIERTO
+   ========================================================================== */
+
+.rsearch-panel {
+  position: fixed;
+  top: 56px;
+  right: 0;
+  bottom: 0;
+  z-index: 125;
+  display: flex;
+  flex-direction: column;
+  width: min(408px, 94vw);
+  border-left: 1px solid var(--border);
+  background: var(--overlay-panel-solid, var(--panel));
+  box-shadow: -24px 0 60px rgba(0, 0, 0, 0.42);
+  animation: rsearch-in 180ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+
+.rsearch-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.rsearch-head h2 {
+  margin: 3px 0 3px;
+  font-family: var(--serif);
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.rsearch-head p {
+  margin: 0;
+  max-width: 30ch;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 10.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rsearch-close {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  border: 1px solid var(--border-soft);
+  border-radius: 7px;
+  color: var(--muted);
+  background: transparent;
+  cursor: pointer;
+}
+
+.rsearch-close:hover {
+  color: var(--text);
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
+}
+
+.rsearch-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 14px 8px;
+  padding: 0 10px;
+  height: 36px;
+  border: 1px solid var(--border-soft);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--bg) 52%, transparent);
+  color: var(--faint);
+}
+
+.rsearch-input:focus-within {
+  border-color: color-mix(in srgb, var(--accent) 60%, var(--border));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+.rsearch-input input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  color: var(--text);
+  background: transparent;
+  font-size: 12.5px;
+}
+
+.rsearch-input input::placeholder {
+  color: var(--faint);
+}
+
+.rsearch-input button {
+  border: 0;
+  color: var(--faint);
+  background: transparent;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.rsearch-meta {
+  padding: 0 16px 10px;
+  color: var(--faint);
+  font-size: 10.5px;
+  line-height: 1.4;
+}
+
+.rsearch-error {
+  margin: 0 14px 8px;
+  padding: 8px 10px;
+  border: 1px solid color-mix(in srgb, #ff6b6b 45%, transparent);
+  border-radius: 7px;
+  color: #ffb4b4;
+  background: color-mix(in srgb, #ff6b6b 10%, transparent);
+  font-size: 11px;
+}
+
+.rsearch-results {
+  flex: 1;
+  min-height: 0;
+  padding: 4px 10px 16px;
+  overflow: auto;
+}
+
+.rsearch-hit {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+  margin-bottom: 6px;
+  padding: 9px 10px;
+  border: 1px solid var(--border-soft);
+  border-radius: 9px;
+  color: var(--text);
+  text-align: left;
+  background: color-mix(in srgb, var(--panel) 45%, transparent);
+  cursor: pointer;
+  transition: border-color 140ms ease, background 140ms ease, transform 140ms ease;
+}
+
+.rsearch-hit:hover {
+  border-color: color-mix(in srgb, var(--accent) 52%, var(--border));
+  background: color-mix(in srgb, var(--accent) 9%, transparent);
+  transform: translateX(-2px);
+}
+
+.rsearch-hit-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.rsearch-hit-head strong {
+  overflow: hidden;
+  font-family: var(--serif);
+  font-size: 13px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rsearch-hit-head em {
+  flex: 0 0 auto;
+  padding: 1px 6px;
+  border-radius: 999px;
+  color: color-mix(in srgb, var(--gold) 88%, var(--text));
+  background: color-mix(in srgb, var(--gold) 14%, transparent);
+  font-size: 9.5px;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.rsearch-snippet {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.45;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.rsearch-empty {
+  padding: 18px 8px;
+  color: var(--faint);
+  font-size: 11.5px;
+  text-align: center;
+}
+
+@media (max-width: 720px) {
+  .rsearch-panel {
+    top: 0;
+    width: 100vw;
+    box-shadow: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rsearch-panel {
+    animation: none;
+  }
+}
+
+@keyframes rsearch-in {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Resaltado momentáneo de las coincidencias al navegar desde el buscador */
+.rs-flash-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  pointer-events: none;
+}
+
+.rs-flash-box {
+  position: fixed;
+  border-radius: 3px;
+  background: rgba(255, 209, 102, 0.38);
+  box-shadow: 0 0 0 1px rgba(255, 183, 3, 0.65);
+  transition: opacity 260ms ease;
+}
+
+.rs-flash-layer.is-fading .rs-flash-box {
+  opacity: 0;
+}

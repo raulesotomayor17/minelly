@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
@@ -58,6 +58,16 @@ struct Package {
     spine: Vec<ManifestItem>,
 }
 
+/// Entrada del índice del EPUB: documento, ancla interna y título.
+#[derive(Clone)]
+pub struct TocEntry {
+    pub path: String,
+    pub fragment: String,
+    pub title: String,
+    /// Nivel de anidación dentro del índice (0 = primer nivel).
+    pub depth: usize,
+}
+
 pub struct ParsedEpub {
     pub title: String,
     pub creator: Option<String>,
@@ -65,6 +75,8 @@ pub struct ParsedEpub {
     pub identifier: Option<String>,
     pub version: String,
     pub chapters: Vec<EpubChapter>,
+    /// Entradas del índice en el orden del libro.
+    pub toc: Vec<TocEntry>,
     pub warnings: Vec<String>,
 }
 
@@ -80,14 +92,15 @@ pub fn read_epub_package(path: &Path) -> Result<ParsedEpub> {
     let package = parse_package(&opf, &rootfile)?;
 
     let mut toc_titles: HashMap<String, String> = HashMap::new();
+    let mut toc_order: Vec<TocEntry> = Vec::new();
     if let Some(ncx_path) = &package.ncx_path {
         if let Ok(ncx_xml) = read_entry(&mut archive, ncx_path) {
-            parse_ncx_titles(&ncx_xml, ncx_path, &mut toc_titles);
+            parse_ncx_titles(&ncx_xml, ncx_path, &mut toc_titles, &mut toc_order);
         }
     }
     if let Some(nav_path) = &package.nav_path {
         if let Ok(nav_xhtml) = read_entry(&mut archive, nav_path) {
-            parse_nav_titles(&nav_xhtml, nav_path, &mut toc_titles);
+            parse_nav_titles(&nav_xhtml, nav_path, &mut toc_titles, &mut toc_order);
         }
     }
 
@@ -185,12 +198,166 @@ pub fn read_epub_package(path: &Path) -> Result<ParsedEpub> {
         identifier: package.identifier,
         version: package.version,
         chapters,
+        toc: toc_order,
         warnings,
     })
 }
 
+/// Posición del bloque que lleva el ancla `fragment` dentro del HTML.
+fn anchor_position(html: &str, fragment: &str) -> Option<usize> {
+    if fragment.is_empty() {
+        return Some(0);
+    }
+    let patterns = [
+        format!("id=\"{fragment}\""),
+        format!("id='{fragment}'"),
+        format!("name=\"{fragment}\""),
+        format!("name='{fragment}'"),
+    ];
+    let mut best: Option<usize> = None;
+    for pattern in &patterns {
+        if let Some(position) = html.find(pattern) {
+            if let Some(tag_start) = html[..position].rfind('<') {
+                best = Some(best.map_or(tag_start, |current: usize| current.min(tag_start)));
+            }
+        }
+    }
+    best
+}
+
+fn push_chapter(chapters: &mut Vec<EpubChapter>, title: &mut Option<String>, html: &mut String) {
+    if html.trim().is_empty() {
+        html.clear();
+        return;
+    }
+    let index = chapters.len() as i64;
+    let name = title
+        .take()
+        .unwrap_or_else(|| format!("Capítulo {}", index + 1));
+    chapters.push(EpubChapter {
+        spine: index,
+        title: name,
+        href: format!("pbb://chapter/{index}"),
+        html: std::mem::take(html),
+    });
+}
+
+/// Construye los capítulos siguiendo el índice del EPUB: agrupa los documentos
+/// del spine y, cuando varios capítulos comparten archivo, corta en sus anclas.
+pub fn chapters_from_toc(parsed: &ParsedEpub) -> Vec<EpubChapter> {
+    let in_spine: Vec<&TocEntry> = parsed
+        .toc
+        .iter()
+        .filter(|entry| {
+            parsed
+                .chapters
+                .iter()
+                .any(|chapter| chapter.href == entry.path)
+        })
+        .collect();
+    if in_spine.len() < 2 {
+        return parsed.chapters.clone();
+    }
+
+    // Los títulos de capítulo son el nivel alto del índice; los niveles
+    // inferiores (subsecciones) no deben convertirse en capítulos.
+    let min_depth = in_spine.iter().map(|entry| entry.depth).min().unwrap_or(0);
+    let min_count = in_spine
+        .iter()
+        .filter(|entry| entry.depth == min_depth)
+        .count();
+    let chapter_depth = if min_count == 1 && in_spine.len() > 1 {
+        min_depth + 1
+    } else {
+        min_depth
+    };
+
+    let mut by_file: HashMap<&str, Vec<&TocEntry>> = HashMap::new();
+    let mut usable = 0usize;
+    for entry in &in_spine {
+        if entry.depth != chapter_depth {
+            continue;
+        }
+        by_file.entry(entry.path.as_str()).or_default().push(entry);
+        usable += 1;
+    }
+    if usable < 2 {
+        return parsed.chapters.clone();
+    }
+
+    let mut chapters: Vec<EpubChapter> = Vec::new();
+    let mut current_title: Option<String> = None;
+    let mut current_html = String::new();
+    let mut located = 0usize;
+
+    for file in &parsed.chapters {
+        let entries = by_file.get(file.href.as_str()).cloned().unwrap_or_default();
+        if entries.is_empty() {
+            if current_title.is_none() {
+                current_title = Some(file.title.clone());
+            }
+            current_html.push_str(&file.html);
+            continue;
+        }
+
+        let mut points: Vec<(usize, String)> = entries
+            .iter()
+            .filter_map(|entry| {
+                anchor_position(&file.html, &entry.fragment).map(|position| {
+                    (position, entry.title.clone())
+                })
+            })
+            .collect();
+        points.sort_by_key(|(position, _)| *position);
+        points.dedup_by_key(|(position, _)| *position);
+
+        if points.is_empty() {
+            if current_title.is_none() {
+                current_title = Some(file.title.clone());
+            }
+            current_html.push_str(&file.html);
+            continue;
+        }
+        located += points.len();
+
+        if points[0].0 > 0 {
+            if current_title.is_none() {
+                current_title = Some(file.title.clone());
+            }
+            current_html.push_str(&file.html[..points[0].0]);
+        }
+
+        for (position, (start, title)) in points.iter().enumerate() {
+            push_chapter(&mut chapters, &mut current_title, &mut current_html);
+            let end = points
+                .get(position + 1)
+                .map(|(next, _)| *next)
+                .unwrap_or(file.html.len());
+            current_title = Some(if title.trim().is_empty() {
+                file.title.clone()
+            } else {
+                title.trim().to_string()
+            });
+            current_html = file.html[*start..end].to_string();
+        }
+    }
+    push_chapter(&mut chapters, &mut current_title, &mut current_html);
+
+    if located < 2 || chapters.is_empty() {
+        parsed.chapters.clone()
+    } else {
+        chapters
+    }
+}
+
+/// Capítulos que deben guardarse al importar.
+pub fn chapters_for_import(parsed: &ParsedEpub) -> Vec<EpubChapter> {
+    chapters_from_toc(parsed)
+}
+
 pub fn import_epub(catalog: &mut Catalog, path: &Path) -> Result<ImportReport> {
     let parsed = read_epub_package(path)?;
+    let chapters = chapters_for_import(&parsed);
     let file_name = path
         .file_name()
         .map(|value| value.to_string_lossy().to_string())
@@ -208,7 +375,7 @@ pub fn import_epub(catalog: &mut Catalog, path: &Path) -> Result<ImportReport> {
         source_format: "epub".to_string(),
         source_path: path.to_string_lossy().to_string(),
         verse_count: 0,
-        entry_count: parsed.chapters.len() as i64,
+        entry_count: chapters.len() as i64,
         imported_at: now_epoch(),
         search_priority: 0,
         cloud_synced: false,
@@ -218,13 +385,14 @@ pub fn import_epub(catalog: &mut Catalog, path: &Path) -> Result<ImportReport> {
             "language": parsed.language,
             "identifier": parsed.identifier,
             "epubVersion": parsed.version,
-            "chapterCount": parsed.chapters.len(),
+            "chapterCount": chapters.len(),
+                "structureVersion": 2,
         }),
     };
 
     catalog.upsert_resource(&resource)?;
-    catalog.replace_epub_chapters(&resource.id, &parsed.chapters)?;
-    resource.entry_count = parsed.chapters.len() as i64;
+    catalog.replace_epub_chapters(&resource.id, &chapters)?;
+    resource.entry_count = chapters.len() as i64;
     catalog.upsert_resource(&resource)?;
 
     let _ = crate::indexer::index_resource(catalog.connection_mut(), &resource.id);
@@ -379,7 +547,12 @@ impl StrExt for String {
     }
 }
 
-fn parse_ncx_titles(ncx_xml: &str, ncx_path: &str, toc_titles: &mut HashMap<String, String>) {
+fn parse_ncx_titles(
+    ncx_xml: &str,
+    ncx_path: &str,
+    toc_titles: &mut HashMap<String, String>,
+    toc_order: &mut Vec<TocEntry>,
+) {
     let Ok(doc) = Document::parse(ncx_xml) else {
         return;
     };
@@ -411,27 +584,76 @@ fn parse_ncx_titles(ncx_xml: &str, ncx_path: &str, toc_titles: &mut HashMap<Stri
         if label.is_empty() || src.is_empty() {
             continue;
         }
-        let resolved_file = resolve_path(&ncx_dir, src);
-        toc_titles.entry(resolved_file).or_insert(label);
+        let (raw_path, fragment) = split_href(src);
+        let resolved_file = resolve_path(&ncx_dir, &raw_path);
+        let depth = nav_point
+            .ancestors()
+            .filter(|node| node.is_element() && node.tag_name().name() == "navPoint")
+            .count();
+        toc_titles
+            .entry(resolved_file.clone())
+            .or_insert_with(|| label.clone());
+        toc_order.push(TocEntry {
+            path: resolved_file,
+            fragment,
+            title: label,
+            depth,
+        });
     }
 }
 
-fn parse_nav_titles(nav_xhtml: &str, nav_path: &str, toc_titles: &mut HashMap<String, String>) {
+fn parse_nav_titles(
+    nav_xhtml: &str,
+    nav_path: &str,
+    toc_titles: &mut HashMap<String, String>,
+    toc_order: &mut Vec<TocEntry>,
+) {
     let nav_dir = nav_path
         .rsplit_once('/')
         .map(|(d, _)| d.to_string())
         .unwrap_or_default();
-    let link_re =
-        Regex::new(r#"(?is)<a\b[^>]*?\bhref\s*=\s*["']([^"']+)["'][^>]*>(.*?)</a>"#).unwrap();
-    for cap in link_re.captures_iter(nav_xhtml) {
-        let href = &cap[1];
+    let token_re = Regex::new(
+        r#"(?is)<ul\b[^>]*>|</ul>|<a\b[^>]*?\bhref\s*=\s*["']([^"']+)["'][^>]*>(.*?)</a>"#,
+    )
+    .unwrap();
+    let mut list_depth: usize = 0;
+    for cap in token_re.captures_iter(nav_xhtml) {
+        let whole = cap.get(0).map(|m| m.as_str()).unwrap_or_default();
+        if whole.to_ascii_lowercase().starts_with("<ul") {
+            list_depth += 1;
+            continue;
+        }
+        if whole.eq_ignore_ascii_case("</ul>") {
+            list_depth = list_depth.saturating_sub(1);
+            continue;
+        }
+        let depth = list_depth.saturating_sub(1);
+        let Some(href) = cap.get(1).map(|m| m.as_str()) else {
+            continue;
+        };
         let raw_label = decode_entities(&TAGS.replace_all(&cap[2], " "));
         let label = raw_label.split_whitespace().collect::<Vec<_>>().join(" ");
         if label.is_empty() || href.starts_with("http://") || href.starts_with("https://") {
             continue;
         }
-        let resolved_file = resolve_path(&nav_dir, href);
-        toc_titles.entry(resolved_file).or_insert(label);
+        let (raw_path, fragment) = split_href(href);
+        let resolved_file = resolve_path(&nav_dir, &raw_path);
+        toc_titles
+            .entry(resolved_file.clone())
+            .or_insert_with(|| label.clone());
+        toc_order.push(TocEntry {
+            path: resolved_file,
+            fragment,
+            title: label,
+            depth,
+        });
+    }
+}
+
+fn split_href(href: &str) -> (String, String) {
+    match href.split_once('#') {
+        Some((path, fragment)) => (path.to_string(), fragment.to_string()),
+        None => (href.to_string(), String::new()),
     }
 }
 
