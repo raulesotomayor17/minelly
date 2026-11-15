@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Seguridad
+    url: https://github.com/raulesotomayor17/minelly/security/advisories/new
+    about: No publiques vulnerabilidades en un issue público. Usa este canal privado.
+  - name: Guía de contribución
+    url: https://github.com/raulesotomayor17/minelly/blob/main/CONTRIBUTING.md
+    about: Lee cómo preparar el entorno y enviar un pull request.
+  - name: Política de datos
+    url: https://github.com/raulesotomayor17/minelly/blob/main/docs/DATA.md
+    about: Antes de publicar una biblioteca o captura, revisa los derechos de autor.

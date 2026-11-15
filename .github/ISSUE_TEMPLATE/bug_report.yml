@@ -1,0 +1,84 @@
+name: Reportar un fallo
+description: Algo no funciona como debería
+title: "[Bug] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Gracias por reportar. **No adjuntes Biblias, comentarios, libros ni
+        capturas con texto protegido.** Tampoco incluyas claves de API ni rutas
+        personales.
+  - type: input
+    id: version
+    attributes:
+      label: Versión de Minelly
+      description: Por ejemplo, 0.2.0. Si compilaste desde el código, indica el commit.
+      placeholder: "0.2.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Sistema operativo
+      options:
+        - Windows 11
+        - Windows 10
+        - Fedora
+        - Ubuntu / Debian
+        - macOS
+        - Otro (indícalo abajo)
+    validations:
+      required: true
+  - type: dropdown
+    id: install
+    attributes:
+      label: Cómo lo instalaste
+      options:
+        - Código fuente (npm run tauri dev)
+        - Binario compilado (--no-bundle)
+        - RPM / DEB / AppImage
+        - Instalador de Windows
+        - DMG de macOS
+        - Otro
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Pasos para reproducirlo
+      description: Sé concreto. Si afecta a un módulo, indica el formato y su origen legal, pero no lo adjuntes.
+      placeholder: |
+        1. Abrir ...
+        2. Hacer clic en ...
+        3. Ver el error ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Resultado esperado
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Resultado actual
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Registros o capturas
+      description: Pega solo las líneas relevantes. Elimina datos personales y texto con derechos de autor.
+      render: shell
+    validations:
+      required: false
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: Confirmación
+      options:
+        - label: He buscado issues existentes y no encontré uno igual.
+          required: true
+        - label: No he incluido datos personales, claves ni contenido con derechos de autor.
+          required: true
