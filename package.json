@@ -35,11 +35,11 @@
     "@tauri-apps/plugin-clipboard-manager": "^2",
     "@tauri-apps/plugin-dialog": "^2.8.4",
     "@tauri-apps/plugin-opener": "^2",
-    "@tiptap/extension-image": "^3.33.0",
-    "@tiptap/extension-link": "^3.33.0",
-    "@tiptap/extension-placeholder": "^3.33.0",
-    "@tiptap/react": "^3.33.0",
-    "@tiptap/starter-kit": "^3.33.0",
+    "@tiptap/extension-image": "^3.33.1",
+    "@tiptap/extension-link": "^3.33.1",
+    "@tiptap/extension-placeholder": "^3.33.1",
+    "@tiptap/react": "^3.33.1",
+    "@tiptap/starter-kit": "^3.33.1",
     "dockview": "^8.9.0",
     "dockview-react": "^8.9.0",
     "react": "^19.1.0",
@@ -50,8 +50,8 @@
     "@tauri-apps/cli": "^2",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
-    "@vitejs/plugin-react": "^6.0.2",
+    "@vitejs/plugin-react": "^6.3.0",
     "typescript": "~6.0.3",
-    "vite": "^8.0.16"
+    "vite": "^8.3.8"
   }
 }
