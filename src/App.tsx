@@ -8,6 +8,7 @@ import NotesWorkspace from "./NotesWorkspace";
 import StudyAssistant, { type RagContext } from "./StudyAssistant";
 import EreaderWorkspace from "./EreaderWorkspace";
 import ResourceEmblem from "./ResourceEmblem";
+import ModuleEmblem from "./ModuleEmblem";
 import BibleVersionPicker from "./BibleVersionPicker";
 import ProfileModal from "./ProfileModal";
 import { loadProfile, type UserProfile } from "./profile";
@@ -32,6 +33,8 @@ import InterlinearVerse, {
 import SelectMenu from "./SelectMenu";
 import TtsPanel from "./TtsPanel";
 import CompareWorkspace from "./CompareWorkspace";
+import FloatingBibleWindow from "./FloatingBibleWindow";
+import FloatingCompareWindow from "./FloatingCompareWindow";
 import CustomizationModal, { PaperModePicker } from "./CustomizationModal";
 import SermonWorkspace from "./SermonWorkspace";
 import {
@@ -61,11 +64,13 @@ import minellyMark from "./assets/minelly-mark.svg";
 import { openExternalUrl } from "./externalLinks";
 import RibbonIcon from "./RibbonIcon";
 import BookmarksDrawer, { type BookmarkEntry, type JumpEntry } from "./BookmarksDrawer";
+import EnvironmentsWorkspace from "./EnvironmentsWorkspace";
+import AiTypesetter from "./AiTypesetter";
+import ResourceSearch from "./ResourceSearch";
+import type { ReaderMode, View, Workspace } from "./workspaceTypes";
 import "./App.css";
 
 type Kind = "bible" | "commentary" | "dictionary" | "reference" | "map" | "book";
-type View = "library" | "reader" | "search" | "book";
-type ReaderMode = "verse" | "page" | "book" | "interlinear";
 type ReaderWidth = "compact" | "normal" | "wide" | "full";
 
 function fileLabel(path: string) {
@@ -241,8 +246,190 @@ function tipTapDocToText(docInput: unknown, fallback = ""): string {
   const lines = root.content.map(walk);
   return lines.join("\n").trim() || fallback;
 }
+
+const BOOK_BLOCK_SELECTOR = "p, blockquote, li, h1, h2, h3, h4, h5, h6";
+
+/**
+ * Devuelve el bloque de texto donde empieza una selección. Evita tomar el
+ * contenedor completo cuando la selección cruza varios párrafos, que era la
+ * causa de que «Jerarquía e índice» no aplicara la categoría al bloque.
+ */
+function bookBlockAtSelectionStart(range: Range, scope: Element | null): HTMLElement | null {
+  if (!scope) return null;
+  const start =
+    range.startContainer.nodeType === Node.ELEMENT_NODE
+      ? (range.startContainer as Element)
+      : range.startContainer.parentElement;
+  if (!start || !scope.contains(start)) return null;
+  const semantic = start.closest<HTMLElement>(BOOK_BLOCK_SELECTOR);
+  if (semantic && semantic !== scope) return semantic;
+  const container = start.closest<HTMLElement>("div");
+  if (
+    container &&
+    container !== scope &&
+    !container.classList.contains("book-typeset-surface") &&
+    !container.classList.contains("book-full-surface")
+  ) {
+    return container;
+  }
+  return (
+    (Array.from(scope.children) as HTMLElement[]).find((child) =>
+      range.intersectsNode(child),
+    ) ?? null
+  );
+}
+
+const SEARCH_FOLD: Record<string, string> = {
+  á: "a", à: "a", ä: "a", â: "a",
+  é: "e", è: "e", ë: "e", ê: "e",
+  í: "i", ì: "i", ï: "i", î: "i",
+  ó: "o", ò: "o", ö: "o", ô: "o",
+  ú: "u", ù: "u", ü: "u", û: "u",
+  ñ: "n",
+};
+
+function foldForSearch(text: string): string {
+  return text.toLowerCase().replace(/[áàäâéèëêíìïîóòöôúùüûñ]/g, (character) => SEARCH_FOLD[character] ?? character);
+}
+
+function rangeFromFlatIndex(nodes: Text[], start: number, length: number): Range | null {
+  let cursor = 0;
+  let startNode: Text | null = null;
+  let startOffset = 0;
+  let endNode: Text | null = null;
+  let endOffset = 0;
+  const end = start + length;
+  for (const node of nodes) {
+    const size = node.nodeValue?.length ?? 0;
+    if (!startNode && start < cursor + size) {
+      startNode = node;
+      startOffset = start - cursor;
+    }
+    if (startNode && end <= cursor + size) {
+      endNode = node;
+      endOffset = end - cursor;
+      break;
+    }
+    cursor += size;
+  }
+  if (!startNode || !endNode) return null;
+  try {
+    const range = document.createRange();
+    range.setStart(startNode, startOffset);
+    range.setEnd(endNode, endOffset);
+    return range;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Resalta durante unos segundos todas las apariciones del texto buscado y
+ * desplaza la vista hasta la primera. No modifica el DOM del lector: dibuja
+ * cajas sobre las coordenadas de cada coincidencia.
+ */
+function flashSearchMatches(root: Element | null, needle: string, duration = 4600): boolean {
+  if (!root) return false;
+  const foldedNeedle = foldForSearch(needle.trim());
+  if (foldedNeedle.length < 2) return false;
+
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  const nodes: Text[] = [];
+  let combined = "";
+  let current = walker.nextNode();
+  while (current) {
+    const value = current.nodeValue ?? "";
+    if (value.trim()) {
+      nodes.push(current as Text);
+      combined += value;
+    }
+    current = walker.nextNode();
+  }
+  const folded = foldForSearch(combined);
+  const ranges: Range[] = [];
+  let from = 0;
+  while (ranges.length < 120) {
+    const position = folded.indexOf(foldedNeedle, from);
+    if (position < 0) break;
+    const range = rangeFromFlatIndex(nodes, position, foldedNeedle.length);
+    if (range) ranges.push(range);
+    from = position + foldedNeedle.length;
+  }
+  if (ranges.length === 0) return false;
+
+  const layer = document.createElement("div");
+  layer.className = "rs-flash-layer";
+  document.body.appendChild(layer);
+
+  let boxes: HTMLDivElement[] = [];
+  function paint() {
+    for (const box of boxes) box.remove();
+    boxes = [];
+    for (const range of ranges) {
+      for (const rect of Array.from(range.getClientRects())) {
+        if (rect.width < 1 || rect.height < 1) continue;
+        const box = document.createElement("div");
+        box.className = "rs-flash-box";
+        box.style.left = `${rect.left}px`;
+        box.style.top = `${rect.top}px`;
+        box.style.width = `${rect.width}px`;
+        box.style.height = `${rect.height}px`;
+        layer.appendChild(box);
+        boxes.push(box);
+      }
+    }
+  }
+
+  paint();
+  ranges[0].startContainer.parentElement?.scrollIntoView({
+    block: "center",
+    behavior: "smooth",
+  });
+  window.setTimeout(paint, 380);
+
+  let frame = 0;
+  const reposition = () => {
+    if (frame) return;
+    frame = window.requestAnimationFrame(() => {
+      frame = 0;
+      paint();
+    });
+  };
+  window.addEventListener("scroll", reposition, true);
+  window.addEventListener("resize", reposition);
+
+  window.setTimeout(() => {
+    window.removeEventListener("scroll", reposition, true);
+    window.removeEventListener("resize", reposition);
+    layer.classList.add("is-fading");
+    window.setTimeout(() => layer.remove(), 800);
+  }, duration);
+
+  return true;
+}
+
+function flashWithRetry(getRoot: () => Element | null, needle: string, attempts = 5) {
+  let remaining = attempts;
+  const attempt = () => {
+    const root = getRoot();
+    if (root && flashSearchMatches(root, needle)) return;
+    remaining -= 1;
+    if (remaining > 0) window.setTimeout(attempt, 380);
+  };
+  attempt();
+}
+
 import { THEME_META, THEME_OPTIONS, type ThemeMode } from "./themes";
 type Theme = ThemeMode;
+
+interface BookStructureReport {
+  resourceId: string;
+  title: string;
+  before: number;
+  after: number;
+  changed: boolean;
+  error?: string | null;
+}
 
 interface Resource {
   id: string;
@@ -392,30 +579,6 @@ const HIGHLIGHT_COLORS: Record<string, string> = {
   pink: "rgba(224, 108, 177, 0.24)",
   orange: "rgba(226, 145, 80, 0.25)",
 };
-
-interface Workspace {
-  id: string;
-  name: string;
-  createdAt: number;
-  view: View;
-  bibleId: string;
-  commentaryId: string;
-  dictionaryId: string;
-  bookId: string;
-  book: number;
-  chapter: number;
-  activeVerse: number;
-  readerMode: ReaderMode;
-  showNumbers: boolean;
-  panelOpen: boolean;
-  panelWidth: number;
-  fontScale: number;
-  focusMode: boolean;
-  resourcesOpen: boolean;
-  readerFont?: string;
-  studyFont?: string;
-  studyFontScale?: number;
-}
 
 const KIND_LABEL: Record<Kind, string> = {
   bible: "Biblia",
@@ -591,6 +754,8 @@ function App() {
   const [focusMode, setFocusMode] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showWorkspaces, setShowWorkspaces] = useState(false);
+  const [showAiTypesetter, setShowAiTypesetter] = useState(false);
+  const [resourceSearchOpen, setResourceSearchOpen] = useState(false);
   const useDockEngine =
     localStorage.getItem("teoamoxtli.dock-engine") !== "legacy";
   const [showModular, setShowModular] = useState(
@@ -604,6 +769,31 @@ function App() {
   const [showCustomization, setShowCustomization] = useState(false);
   const [showAssistant, setShowAssistant] = useState(false);
   const [showEreader, setShowEreader] = useState(false);
+  const [ereaderContext, setEreaderContext] = useState<{
+    path: string;
+    title: string;
+    spine: number;
+    resourceId?: string;
+    fraction?: number;
+  } | null>(null);
+  const [lastEreader, setLastEreader] = useState<{
+    path: string;
+    title: string;
+    spine: number;
+    resourceId?: string;
+    fraction?: number;
+  } | null>(null);
+  const [floatingBible, setFloatingBible] = useState<{
+    book: number;
+    chapter: number;
+    verse: number;
+    bibleId?: string;
+  } | null>(null);
+  const [floatingCompare, setFloatingCompare] = useState<{
+    book: number;
+    chapter: number;
+    verse: number;
+  } | null>(null);
   const [profile, setProfile] = useState<UserProfile>(() => loadProfile());
   const [showProfile, setShowProfile] = useState(false);
   const [ereaderPath, setEreaderPath] = useState("");
@@ -1295,8 +1485,10 @@ function App() {
       setResources(nextResources);
       setBooks(nextBooks);
       setStatus("");
+      return nextResources;
     } catch (error) {
       setStatus(String(error));
+      return resources;
     } finally {
       setBusy(false);
     }
@@ -1304,6 +1496,34 @@ function App() {
 
   useEffect(() => {
     void refreshCatalog();
+  }, []);
+
+  // Escáner de estructura: revisa los libros EPUB que aún no han pasado por el
+  // agrupador por índice y reconstruye sus capítulos en segundo plano.
+  useEffect(() => {
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      invoke<BookStructureReport[]>("scan_book_structures", { force: false })
+        .then(async (reports) => {
+          if (cancelled) return;
+          const changed = reports.filter((report) => report.changed);
+          if (changed.length === 0) return;
+          await refreshCatalog();
+          if (cancelled) return;
+          setBookStructureTick((value) => value + 1);
+          const names = changed.slice(0, 3).map((report) => report.title);
+          setStatus(
+            `Índices reconstruidos: ${names.join(", ")}${
+              changed.length > 3 ? ` y ${changed.length - 3} más` : ""
+            }.`,
+          );
+        })
+        .catch(() => {});
+    }, 2500);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
   }, []);
 
   useEffect(() => {
@@ -1672,8 +1892,8 @@ function App() {
     if (node.closest(".book-reader") && !node.closest(".reader")) {
       const text = range.toString().trim();
       if (!text) return;
-      const content = node.closest(".epub-content") ?? node.closest(".book-reader");
-      bookContextNodeRef.current = node.closest("p, blockquote, div") as HTMLElement | null;
+      const content = node.closest(".epub-content") ?? node.closest(".book-full-surface") ?? node.closest(".book-reader");
+      bookContextNodeRef.current = bookBlockAtSelectionStart(range, content);
       const offsets = content ? selectionOffsets(content, range) : { start: 0, end: text.length };
       setSelectionMenu(null);
       setContextMenu({
@@ -2519,15 +2739,16 @@ function App() {
     const selected = await open({
       directory: false,
       multiple: false,
-      title: "Selecciona un libro o módulo (.azw3, .epub, .mobi, .docx, .bbli, .cmti, .dcti)",
+      title: "Selecciona un libro o módulo (.azw3, .epub, .mobi, .docx, .pdf, .bbli, .cmti, .dcti)",
       filters: [
         {
-          name: "Libros y módulos (AZW3, EPUB, MOBI, DOCX, e-Sword, MySword)",
+          name: "Libros y módulos (AZW3, EPUB, MOBI, DOCX, PDF, e-Sword, MySword)",
           extensions: [
             "azw3",
             "epub",
             "mobi",
             "docx",
+            "pdf",
             "bbli",
             "bblx",
             "cmti",
@@ -2806,6 +3027,15 @@ function App() {
     setStatus("Entorno actualizado con la disposición actual.");
   }
 
+  function reopenLastEreader() {
+    if (!lastEreader?.path) return;
+    setFloatingBible(null);
+    setFloatingCompare(null);
+    setEreaderPath(lastEreader.path);
+    setEreaderTitle(lastEreader.title);
+    setShowEreader(true);
+  }
+
   function openAvanzadoModularPreset(presetId: string) {
     setModularPreset(presetId);
     setShowWorkspaces(false);
@@ -3065,10 +3295,41 @@ function App() {
 
   async function reconstructBookStructure() {
     if (!bookId) return;
+    const confirmed = window.confirm(
+      "«Ordenar índice y capítulos» reescribe todos los capítulos desde el texto actual " +
+        "y vuelve a partirlos por el índice.\n\n" +
+        "En un libro ya dividido puede duplicar capítulos o dejar fragmentos vacíos. " +
+        "Si algo sale mal, podrás restaurar desde el EPUB original.\n\n¿Continuar?",
+    );
+    if (!confirmed) return;
     try {
       await invoke("reconstruct_book_structure", { resourceId: bookId });
       setBookStructureTick((value) => value + 1);
       setStatus("Índice y capítulos reconstruidos.");
+    } catch (error) {
+      setStatus(String(error));
+    }
+  }
+
+  async function restoreBookStructure() {
+    if (!bookId) return;
+    const confirmed = window.confirm(
+      "Se reemplazarán todos los capítulos por los del archivo EPUB original.\n\n" +
+        "Se conservan las notas, los resaltados y los marcadores. " +
+        "Se pierden las divisiones y las ediciones manuales del texto de los capítulos.\n\n¿Restaurar?",
+    );
+    if (!confirmed) return;
+    try {
+      const chapters = await invoke<unknown[]>("book_restore_from_source", {
+        resourceId: bookId,
+      });
+      setBookSpine(0);
+      setBookStructureTick((value) => value + 1);
+      setStatus(
+        `Estructura restaurada desde el EPUB original: ${
+          Array.isArray(chapters) ? chapters.length : 0
+        } capítulos.`,
+      );
     } catch (error) {
       setStatus(String(error));
     }
@@ -3380,39 +3641,108 @@ function App() {
     setStatus("Capítulo completado.");
   }
 
-  async function persistBookChapterHtml(html: string) {
-    await invoke("update_book_chapter_html", { resourceId: bookId, spine: bookSpine, html });
-    setBookChapter((current) => current ? { ...current, html } : current);
+  async function persistBookChapterHtml(html: string, spine = bookSpine) {
+    await invoke("update_book_chapter_html", { resourceId: bookId, spine, html });
+    if (spine === bookSpine) {
+      setBookChapter((current) => (current ? { ...current, html } : current));
+    }
+    setBookFullChapters((current) =>
+      current.map((chapter) => (chapter.spine === spine ? { ...chapter, html } : chapter)),
+    );
+  }
+
+  /**
+   * Localiza la superficie editable que contiene un bloque: el capítulo suelto
+   * (`.epub-content`) o la sección de un capítulo dentro de la lectura completa
+   * (`.book-full-chapter`). Devuelve también el `spine` al que pertenece.
+   */
+  function bookScopeForNode(node: HTMLElement | null) {
+    const reader = bookReaderRef.current;
+    if (!node || !reader) return null;
+    const section = node.closest<HTMLElement>(".book-full-chapter");
+    if (section) {
+      const surface = node.closest<HTMLElement>(".book-typeset-surface");
+      if (!surface) return null;
+      const spineValue = Number(section.dataset.spine);
+      return {
+        container: surface,
+        spine: Number.isFinite(spineValue) ? spineValue : bookSpine,
+      };
+    }
+    const content = reader.querySelector<HTMLElement>(".epub-content");
+    if (!content) return null;
+    return { container: content, spine: bookSpine };
+  }
+
+  function blockToConvert(node: HTMLElement, container: HTMLElement) {
+    if (node === container) return null;
+    if (node.classList.contains("book-typeset-surface")) return null;
+    return node;
   }
 
   async function applyBookBlockTag(tag: "h1" | "h2" | "h3" | "h4" | "p", target?: HTMLElement | null) {
     const node = target ?? bookContextNodeRef.current;
-    const content = bookReaderRef.current?.querySelector<HTMLElement>(".epub-content");
-    if (!node || !content) return;
+    const scope = bookScopeForNode(node);
+    const block = node && scope ? blockToConvert(node, scope.container) : null;
+    if (!scope || !block) {
+      setStatus("Selecciona un párrafo o un título concreto dentro del libro.");
+      return;
+    }
     const replacement = document.createElement(tag);
-    if (tag !== "p") replacement.id = `sec-${Date.now()}`;
-    replacement.innerHTML = node.innerHTML;
-    node.replaceWith(replacement);
+    if (tag !== "p") replacement.id = `sec-${scope.spine}-${Date.now()}`;
+    replacement.innerHTML = block.innerHTML;
+    block.replaceWith(replacement);
     bookContextNodeRef.current = replacement;
     setContextMenu(null);
-    try { await persistBookChapterHtml(content.innerHTML); setStatus(`Bloque convertido a ${tag.toUpperCase()}.`); }
-    catch (error) { setStatus(String(error)); }
+    try {
+      await persistBookChapterHtml(scope.container.innerHTML, scope.spine);
+      const title = (replacement.textContent ?? "").replace(/\s+/g, " ").trim().slice(0, 120);
+      const isChapterHeading =
+        tag === "h1" &&
+        scope.container.classList.contains("epub-content") &&
+        scope.container.querySelector("h1") === replacement &&
+        Boolean(title);
+      if (isChapterHeading) {
+        await invoke("book_rename_chapter", {
+          resourceId: bookId,
+          spine: scope.spine,
+          newTitle: title,
+        });
+        setBookStructureTick((value) => value + 1);
+        setStatus(`Capítulo renombrado a “${title}”.`);
+      } else {
+        setStatus(`Bloque convertido a ${tag.toUpperCase()}.`);
+      }
+    } catch (error) {
+      setStatus(String(error));
+    }
   }
 
   async function splitBookChapterAt(target?: HTMLElement | null) {
     const node = target ?? bookContextNodeRef.current;
-    const content = bookReaderRef.current?.querySelector<HTMLElement>(".epub-content");
-    if (!node || !content || !bookChapter) return;
-    const children = Array.from(content.children) as HTMLElement[];
-    const index = children.indexOf(node);
-    if (index < 0) return;
+    const scope = bookScopeForNode(node);
+    if (!node || !scope || !bookChapter) return;
+    let block: HTMLElement | null = node;
+    while (block && block.parentElement !== scope.container) block = block.parentElement;
+    const children = Array.from(scope.container.children) as HTMLElement[];
+    const index = block ? children.indexOf(block) : -1;
+    if (index < 0) {
+      setStatus("No se pudo dividir: el bloque no pertenece a este capítulo.");
+      return;
+    }
     const beforeHtml = children.slice(0, index).map((el) => el.outerHTML).join("");
     const afterHtml = children.slice(index).map((el) => el.outerHTML).join("");
-    const title = (node.textContent ?? "").trim().slice(0, 120) || `Capítulo ${bookSpine + 2}`;
+    const title = (block?.textContent ?? "").trim().slice(0, 120) || `Capítulo ${scope.spine + 2}`;
     try {
-      await invoke("book_split_chapter_at", { resourceId: bookId, spine: bookSpine, beforeHtml, afterHtml, newChapterTitle: title });
+      await invoke("book_split_chapter_at", {
+        resourceId: bookId,
+        spine: scope.spine,
+        beforeHtml,
+        afterHtml,
+        newChapterTitle: title,
+      });
       setBookStructureTick((value) => value + 1);
-      setBookSpine(bookSpine + 1);
+      setBookSpine(scope.spine + 1);
       setContextMenu(null);
       setStatus("Capítulo dividido.");
     } catch (error) { setStatus(String(error)); }
@@ -3422,14 +3752,19 @@ function App() {
     if (!bookCurationMode) return;
     const target = (event.target as HTMLElement).closest("p,h1,h2,h3,h4,blockquote,div");
     if (!target || !target.closest(".book-typeset-surface")) return;
+    if (target.classList.contains("book-typeset-surface")) return;
     const rect = target.getBoundingClientRect();
     setBookHoveredBlock({ node: target as HTMLElement, x: rect.right - 8, y: rect.top + 4 });
   }
 
   async function formatBookParagraph(mode: "quote" | "poetry" | "callout" | "normal") {
     const node = bookContextNodeRef.current;
-    const content = bookReaderRef.current?.querySelector(".epub-content");
-    if (!node || !content) return;
+    const scope = bookScopeForNode(node);
+    const block = node && scope ? blockToConvert(node, scope.container) : null;
+    if (!scope || !block) {
+      setStatus("Selecciona un párrafo concreto dentro del libro.");
+      return;
+    }
     let replacement: HTMLElement;
     if (mode === "quote") {
       replacement = document.createElement("blockquote");
@@ -3443,15 +3778,12 @@ function App() {
     } else {
       replacement = document.createElement("p");
     }
-    replacement.innerHTML = node.innerHTML;
-    node.replaceWith(replacement);
+    replacement.innerHTML = block.innerHTML;
+    block.replaceWith(replacement);
+    bookContextNodeRef.current = replacement;
     setContextMenu(null);
     try {
-      await invoke("update_book_chapter_html", {
-        resourceId: bookId,
-        spine: bookSpine,
-        html: content.innerHTML,
-      });
+      await persistBookChapterHtml(scope.container.innerHTML, scope.spine);
       setStatus("Formato del párrafo guardado.");
     } catch (error) {
       setStatus(String(error));
@@ -3460,11 +3792,34 @@ function App() {
 
   function renderRibbonTools() {
     return (
-      <button type="button" className="tool-button ribbon-open-button" onClick={() => setBookmarksOpen((value) => !value)} title="Bitácora de lectura: separador, marcadores e historial">
-        <RibbonIcon size={15} color="#d97706" /> Bitácora
-      </button>
+      <>
+        <button
+          type="button"
+          className="tool-button"
+          onClick={() => setResourceSearchOpen(true)}
+          title="Buscar solo en este recurso (Ctrl+F)"
+        >
+          <Icon name="search" /> Buscar
+        </button>
+        <button type="button" className="tool-button ribbon-open-button" onClick={() => setBookmarksOpen((value) => !value)} title="Bitácora de lectura: separador, marcadores e historial">
+          <RibbonIcon size={15} color="#d97706" /> Bitácora
+        </button>
+      </>
     );
   }
+
+  useEffect(() => {
+    function onSearchShortcut(event: KeyboardEvent) {
+      if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== "f") return;
+      if (view !== "reader" && view !== "book") return;
+      const target = event.target as HTMLElement | null;
+      if (target && ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName)) return;
+      event.preventDefault();
+      setResourceSearchOpen(true);
+    }
+    window.addEventListener("keydown", onSearchShortcut);
+    return () => window.removeEventListener("keydown", onSearchShortcut);
+  }, [view]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -3810,6 +4165,13 @@ function App() {
             <span>{tr("Entornos", "Environments")}</span>
           </button>
           <button
+            className={showAiTypesetter ? "nav-item active" : "nav-item"}
+            onClick={() => setShowAiTypesetter(true)}
+          >
+            <Icon name="typeset" />
+            <span>{tr("Maquetado IA", "AI typesetting")}</span>
+          </button>
+          <button
             className={showCustomization ? "nav-item active" : "nav-item"}
             onClick={() => setShowCustomization(true)}
           >
@@ -3911,7 +4273,7 @@ function App() {
 
       <main className={showHome ? "main-area home-mode" : "main-area"}>
         <header className="topbar">
-          {view === "book" ? (
+          {!showHome && (view === "book" ? (
             <div className="book-topbar">
               <button
                 className="icon-button"
@@ -4003,7 +4365,7 @@ function App() {
               )}
               <BibleVersionPicker bibles={bibles} value={bibleId} onChange={setBibleId} />
             </div>
-          )}
+          ))}
 
           <form className="search-form" onSubmit={runSearch}>
             <Icon name="search" />
@@ -5731,6 +6093,16 @@ function App() {
                       {bookChapters.length} capítulos · {processedBookChapter.outline.length} secciones
                     </small>
                     <button type="button" className="book-toc-reconstruct" onClick={() => void reconstructBookStructure()}>Ordenar índice y capítulos</button>
+                    {currentLibraryBook?.sourceFormat === "epub" && (
+                      <button
+                        type="button"
+                        className="book-toc-reconstruct book-toc-restore"
+                        onClick={() => void restoreBookStructure()}
+                        title="Reemplaza los capítulos por los del archivo EPUB original"
+                      >
+                        Restaurar desde el EPUB original
+                      </button>
+                    )}
                   </div>
                 )}
                 <button
@@ -6599,216 +6971,26 @@ function App() {
         )}
 
         {showWorkspaces && (
-          <div className="drawer-backdrop" onClick={() => setShowWorkspaces(false)}>
-            <aside
-              className="workspace-drawer"
-              role="dialog"
-              aria-modal="true"
-              aria-label="Entornos de ventana al estilo integrado"
-              onClick={(event) => event.stopPropagation()}
-            >
-              <div className="drawer-heading">
-                <div>
-                  <span className="eyebrow">Ecosistema y Disposición (Estilo Integrado)</span>
-                  <h2>Entornos de Estudio</h2>
-                </div>
-                <button
-                  className="icon-button"
-                  onClick={() => setShowWorkspaces(false)}
-                  aria-label="Cerrar entornos"
-                >
-                  <Icon name="close" />
-                </button>
-              </div>
-              <p className="drawer-copy">
-                Elige una plantilla de entorno conectada (con grupos de enlace Link Set A–F entre
-                Biblia, Comentarios y Libros) o guarda instantáneas completas de tu espacio de
-                trabajo.
-              </p>
-
-              <div className="section-label">Plantillas rápidas (Ventana principal)</div>
-              <div className="avanzado-layout-grid">
-                <button
-                  type="button"
-                  className="avanzado-layout-card"
-                  onClick={() => applyPreset("study")}
-                >
-                  <div className="avanzado-layout-diagram">
-                    <span className="pane-box wide">Biblia</span>
-                    <span className="pane-box">Com / Dic / Notas</span>
-                  </div>
-                  <strong>Estudio Bíblico Integrado</strong>
-                  <small>Biblia por versículo + Panel lateral de Comentario, Diccionario y Notas</small>
-                </button>
-
-                <button
-                  type="button"
-                  className="avanzado-layout-card"
-                  onClick={() => applyPreset("reading")}
-                >
-                  <div className="avanzado-layout-diagram">
-                    <span className="pane-box full">Lectura continua enfocada</span>
-                  </div>
-                  <strong>Lectura Limpia Inmersiva</strong>
-                  <small>Libro completo sin distracciones, ideal con modos de papel Sepia o Crema</small>
-                </button>
-              </div>
-
-              <div className="section-label">
-                Entornos Multipanel Avanzados (Lienzo con Link Sets A–F)
-              </div>
-              <div className="avanzado-layout-grid">
-                <button
-                  type="button"
-                  className="avanzado-layout-card"
-                  onClick={() => openAvanzadoModularPreset("study")}
-                >
-                  <div className="avanzado-layout-diagram">
-                    <span className="pane-box wide">Biblia [A]</span>
-                    <div className="pane-stack">
-                      <span className="pane-box">Comentario [A]</span>
-                      <span className="pane-box">Diccionario</span>
-                    </div>
-                  </div>
-                  <strong>Exégesis 3 Paneles (Link A)</strong>
-                  <small>Biblia sincronizada con Comentario + Diccionario léxico abajo</small>
-                </button>
-
-                <button
-                  type="button"
-                  className="avanzado-layout-card"
-                  onClick={() => openAvanzadoModularPreset("seminary")}
-                >
-                  <div className="avanzado-layout-diagram">
-                    <span className="pane-box">Biblia [A]</span>
-                    <span className="pane-box">Libro [A]</span>
-                    <span className="pane-box">Comentario [A]</span>
-                  </div>
-                  <strong>Seminario: Biblia + Libro + Comentario</strong>
-                  <small>Citas del libro sincronizan automáticamente la Biblia y el Comentario</small>
-                </button>
-
-                <button
-                  type="button"
-                  className="avanzado-layout-card"
-                  onClick={() => openAvanzadoModularPreset("grid4")}
-                >
-                  <div className="avanzado-layout-diagram grid-2x2">
-                    <span className="pane-box">Biblia 1 [A]</span>
-                    <span className="pane-box">Biblia 2 [A]</span>
-                    <span className="pane-box">Comentario [A]</span>
-                    <span className="pane-box">Libro [A]</span>
-                  </div>
-                  <strong>Cuadrícula Multivista 2×2 (4 paneles)</strong>
-                  <small>2 versiones bíblicas + Comentario + Libro conectado en cuadrícula</small>
-                </button>
-
-                <button
-                  type="button"
-                  className="avanzado-layout-card"
-                  onClick={() => openAvanzadoModularPreset("compare")}
-                >
-                  <div className="avanzado-layout-diagram">
-                    <span className="pane-box">Biblia 1 [A]</span>
-                    <span className="pane-box">Biblia 2 [A]</span>
-                    <span className="pane-box">Comentario [A]</span>
-                  </div>
-                  <strong>Paralelo de Traducciones</strong>
-                  <small>Dos Biblias en paralelo sincronizadas con Comentario exegético</small>
-                </button>
-
-                <button
-                  type="button"
-                  className="avanzado-layout-card"
-                  onClick={() => openAvanzadoModularPreset("avanzado-compare")}
-                >
-                  <div className="avanzado-layout-diagram">
-                    <span className="pane-box">Biblia [A]</span>
-                    <span className="pane-box wide">Comparador [A]</span>
-                    <span className="pane-box">Comentario [A]</span>
-                  </div>
-                  <strong>Estudio Comparado Avanzado</strong>
-                  <small>Biblia + Comparador de Versiones integrado + Comentario enlazados</small>
-                </button>
-
-                <button
-                  type="button"
-                  className="avanzado-layout-card"
-                  onClick={() => openAvanzadoModularPreset("avanzado-original")}
-                >
-                  <div className="avanzado-layout-diagram grid-2x2">
-                    <span className="pane-box">Biblia [A]</span>
-                    <span className="pane-box">Interlineal [A]</span>
-                    <span className="pane-box">Comentario [A]</span>
-                    <span className="pane-box">Diccionario</span>
-                  </div>
-                  <strong>Idiomas Originales (AT/NT)</strong>
-                  <small>Biblia + Interlineal Hebreo/Griego + Comentario + Léxico Strong</small>
-                </button>
-              </div>
-
-              <div className="section-label">Guardar entorno personalizado</div>
-              <div className="save-workspace">
-                <input
-                  value={workspaceName}
-                  onChange={(event) => setWorkspaceName(event.target.value)}
-                  placeholder="Ej. Estudio de Juan 3 (Sepia + NTV)"
-                  aria-label="Nombre del entorno"
-                />
-                <button className="primary-button" onClick={saveWorkspace}>
-                  Guardar actual
-                </button>
-              </div>
-
-              <div className="section-label">
-                Mis entornos guardados ({workspaces.length})
-              </div>
-              <div className="workspace-list">
-                {workspaces.map((workspace) => (
-                  <div className="workspace-item" key={workspace.id}>
-                    <button
-                      className="workspace-main"
-                      onClick={() => applyWorkspace(workspace)}
-                    >
-                      <strong>{workspace.name}</strong>
-                      <span>
-                        {bibles.find((item) => item.id === workspace.bibleId)?.abbreviation ??
-                          "Biblia"}{" "}
-                        · {books.find((b) => b.number === workspace.book)?.name ?? `Libro ${workspace.book}`}{" "}
-                        {workspace.chapter}:{workspace.activeVerse} · {workspace.readerMode}
-                      </span>
-                    </button>
-                    <button
-                      type="button"
-                      className="icon-button"
-                      onClick={() => updateWorkspaceInPlace(workspace.id)}
-                      title="Actualizar este entorno con la disposición actual"
-                      aria-label={`Actualizar entorno ${workspace.name}`}
-                    >
-                      ↻
-                    </button>
-                    <button
-                      className="icon-button danger"
-                      onClick={() =>
-                        setWorkspaces((current) =>
-                          current.filter((item) => item.id !== workspace.id),
-                        )
-                      }
-                      aria-label={`Eliminar entorno ${workspace.name}`}
-                      title="Eliminar entorno"
-                    >
-                      <Icon name="trash" />
-                    </button>
-                  </div>
-                ))}
-                {workspaces.length === 0 && (
-                  <p className="empty-hint">
-                    Todavía no hay entornos guardados. Configura la ventana y guarda uno arriba.
-                  </p>
-                )}
-              </div>
-            </aside>
-          </div>
+          <EnvironmentsWorkspace
+            workspaces={workspaces}
+            workspaceName={workspaceName}
+            onWorkspaceNameChange={setWorkspaceName}
+            onSave={saveWorkspace}
+            onApply={applyWorkspace}
+            onUpdate={updateWorkspaceInPlace}
+            onDelete={(workspaceId) =>
+              setWorkspaces((current) => current.filter((item) => item.id !== workspaceId))
+            }
+            onApplyWindowPreset={applyPreset}
+            onOpenModularPreset={openAvanzadoModularPreset}
+            onClose={() => setShowWorkspaces(false)}
+            bibles={bibles.map((resource) => ({
+              id: resource.id,
+              title: resource.title,
+              abbreviation: resource.abbreviation,
+            }))}
+            books={books.map((item) => ({ number: item.number, name: item.name }))}
+          />
         )}
 
         {selectionMenu && !contextMenu && !showNotes && (
@@ -6977,7 +7159,11 @@ function App() {
             {view === "book" && (
               <>
                 <div className="context-menu-subhead">Jerarquía e Índice</div>
-                <button onClick={() => void splitBookChapterAt()}>✂️ Dividir aquí como Nuevo Capítulo</button>
+                <p className="context-menu-hint">
+                  H1–H4 ordenan las <strong>Secciones</strong> del capítulo. Para crear un capítulo nuevo,
+                  usa «Dividir aquí».
+                </p>
+                <button onClick={() => void splitBookChapterAt()}>✂️ Dividir aquí y crear capítulo</button>
                 <button onClick={() => void applyBookBlockTag("h1")}>H1 — Título dentro del capítulo</button>
                 <button onClick={() => void applyBookBlockTag("h2")}>H2 — Sección principal</button>
                 <button onClick={() => void applyBookBlockTag("h3")}>H3 — Subsección</button>
@@ -7211,11 +7397,12 @@ function App() {
                 type="button"
                 className="primary-button"
                 onClick={() => {
-                  openReference(
-                    scripturePreview.book,
-                    scripturePreview.chapter,
-                    scripturePreview.verse,
-                  );
+                  setFloatingBible({
+                    book: scripturePreview.book,
+                    chapter: scripturePreview.chapter,
+                    verse: scripturePreview.verse,
+                    bibleId,
+                  });
                   setScripturePreview(null);
                 }}
               >
@@ -7224,7 +7411,26 @@ function App() {
               <button
                 type="button"
                 className="secondary-button"
-                onClick={() => {
+                onClick={async () => {
+                  const nextResources = await refreshCatalog();
+                  const context = ereaderContext;
+                  const resource =
+                    nextResources.find((item) => item.id === context?.resourceId) ??
+                    nextResources.find(
+                      (item) =>
+                        item.sourcePath &&
+                        (item.sourcePath === context?.path || item.sourcePath === ereaderPath),
+                    ) ??
+                    nextResources.find((item) => item.kind === "book");
+                  setModularBook(
+                    resource
+                      ? { resourceId: resource.id, spine: context?.spine ?? 0 }
+                      : null,
+                  );
+                  setFloatingBible(null);
+                  setFloatingCompare(null);
+                  setShowEreader(false);
+                  setEreaderContext(null);
                   setBook(scripturePreview.book);
                   setChapter(scripturePreview.chapter);
                   setActiveVerse(scripturePreview.verse);
@@ -7238,11 +7444,12 @@ function App() {
                 type="button"
                 className="secondary-button"
                 onClick={() => {
-                  setBook(scripturePreview.book);
-                  setChapter(scripturePreview.chapter);
-                  setActiveVerse(scripturePreview.verse);
+                  setFloatingCompare({
+                    book: scripturePreview.book,
+                    chapter: scripturePreview.chapter,
+                    verse: scripturePreview.verse,
+                  });
                   setScripturePreview(null);
-                  setShowCompare(true);
                 }}
               >
                 Comparar versiones
@@ -7347,8 +7554,48 @@ function App() {
             initialPath={ereaderPath}
             initialTitle={ereaderTitle}
             resources={resources}
-            onClose={() => setShowEreader(false)}
+            onClose={() => {
+              setShowEreader(false);
+              setEreaderContext(null);
+            }}
             onOpenScripture={(refBook, refChapter, refVerse, label, x, y) => void openScriptureRefPreview(refBook, refChapter, refVerse, refVerse, label, x, y)}
+            onContextChange={(context) => {
+              setEreaderContext(context);
+              setLastEreader(context);
+            }}
+          />
+        )}
+
+        {floatingBible && (
+          <FloatingBibleWindow
+            resources={resources}
+            books={books}
+            initialReference={{
+              book: floatingBible.book,
+              chapter: floatingBible.chapter,
+              verse: floatingBible.verse,
+            }}
+            initialBibleId={floatingBible.bibleId}
+            readerFont={readerFont}
+            readerScale={fontScale}
+            studyFont={studyFont}
+            studyScale={studyFontScale}
+            onClose={() => setFloatingBible(null)}
+          />
+        )}
+
+        {floatingCompare && (
+          <FloatingCompareWindow
+            bibles={bibles.map((item) => ({
+              id: item.id,
+              title: item.title,
+              abbreviation: item.abbreviation,
+            }))}
+            books={books.map((item) => ({ number: item.number, name: item.name }))}
+            initialBook={floatingCompare.book}
+            initialChapter={floatingCompare.chapter}
+            initialVerse={floatingCompare.verse}
+            onClose={() => setFloatingCompare(null)}
           />
         )}
 
@@ -7386,12 +7633,19 @@ function App() {
               resources={resources}
               books={books}
               initialReference={{ book, chapter, verse: activeVerse }}
+              initialPreset={modularPreset}
+              initialBookId={modularBook?.resourceId}
+              initialBookSpine={modularBook?.spine}
               readerFont={readerFont}
               studyFont={studyFont}
               readerScale={fontScale}
               studyScale={studyFontScale}
               onOpenModule={openModuleFromCanvas}
-              onExit={() => setShowModular(false)}
+              onExit={() => {
+                setShowModular(false);
+                setModularPreset(undefined);
+                setModularBook(null);
+              }}
             />
           ) : (
             <ModularWorkspace
@@ -7442,6 +7696,35 @@ function App() {
             </button>
             <button type="button" onClick={goToReadingRibbon}>⇄ Punto de lectura</button>
             <button type="button" onClick={() => setReturnTarget(null)} aria-label="Ocultar">×</button>
+          </div>
+        )}
+
+        {lastEreader && !showEreader && lastEreader.path && (
+          <div className="ereader-return-pill" role="status">
+            <span className="ereader-return-icon" aria-hidden="true">
+              <ModuleEmblem id="ereader" size={16} />
+            </span>
+            <button
+              type="button"
+              className="ereader-return-main"
+              onClick={reopenLastEreader}
+              title="Volver al eReader en la página donde dejaste la lectura"
+            >
+              <span>Regresar al eReader</span>
+              <strong>{lastEreader.title || lastEreader.path.split(/[\\/]/).pop()}</strong>
+              {typeof lastEreader.fraction === "number" && (
+                <em>{Math.round(lastEreader.fraction * 100)}%</em>
+              )}
+            </button>
+            <button
+              type="button"
+              className="ereader-return-dismiss"
+              onClick={() => setLastEreader(null)}
+              aria-label="Ocultar el regreso al eReader"
+              title="Ocultar"
+            >
+              ×
+            </button>
           </div>
         )}
 
@@ -7583,13 +7866,67 @@ function App() {
       {showPbb && (
           <PersonalBookBuilder
             onClose={() => setShowPbb(false)}
-            onCatalogChanged={refreshCatalog}
+            onCatalogChanged={async () => { await refreshCatalog(); }}
             onOpenCustomization={() => setShowCustomization(true)}
             onOpenResource={(resourceId) => {
               setBookId(resourceId);
               setView("book");
               setShowPbb(false);
               void refreshCatalog();
+            }}
+          />
+        )}
+
+        {resourceSearchOpen && (view === "reader" || view === "book") && (
+          <ResourceSearch
+            resourceId={view === "book" ? bookId : bibleId}
+            resourceTitle={
+              view === "book"
+                ? currentLibraryBook?.title ?? "Libro"
+                : currentBible?.title ?? "Biblia"
+            }
+            scopeLabel={view === "book" ? "Libro" : "Biblia"}
+            onClose={() => setResourceSearchOpen(false)}
+            onSelect={(match, query) => {
+              if (match.kind === "verse" && match.book && match.chapter && match.verse) {
+                setBook(match.book);
+                setChapter(match.chapter);
+                setActiveVerse(match.verse);
+                setView("reader");
+                setResourceSearchOpen(false);
+                window.setTimeout(() => {
+                  flashWithRetry(
+                    () => document.querySelector(".reader, .book-reader") ?? null,
+                    query,
+                  );
+                }, 420);
+                return;
+              }
+              if (typeof match.spine === "number") {
+                setBookSpine(match.spine);
+                setView("book");
+                setResourceSearchOpen(false);
+                window.setTimeout(() => {
+                  flashWithRetry(
+                    () =>
+                      bookReaderRef.current?.querySelector(
+                        ".epub-content, .book-typeset-surface",
+                      ) ?? null,
+                    query,
+                  );
+                }, 420);
+              }
+            }}
+          />
+        )}
+
+        {showAiTypesetter && (
+          <AiTypesetter
+            books={libraryBooks.map((book) => ({ id: book.id, title: book.title }))}
+            onClose={() => setShowAiTypesetter(false)}
+            onApplied={() => {
+              void refreshCatalog();
+              setBookStructureTick((value) => value + 1);
             }}
           />
         )}

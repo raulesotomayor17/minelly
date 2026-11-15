@@ -15,9 +15,11 @@ use crate::model::{
 
 pub mod docx;
 pub mod epub;
+pub mod pdf;
 
 const SUPPORTED_EXTENSIONS: &[&str] = &[
     "bbli", "bblx", "cmti", "dcti", "lexi", "refi", "mapx", "mybible", "epub", "azw3", "mobi", "docx",
+    "pdf",
 ];
 
 pub fn scan_folder(path: &Path) -> Vec<PathBuf> {
@@ -56,10 +58,14 @@ pub fn import_path(catalog: &mut Catalog, path: &Path) -> Result<ImportReport> {
     if extension == "epub" {
         return epub::import_epub(catalog, path);
     }
+    if extension == "pdf" {
+        return pdf::import_pdf(catalog, path);
+    }
     if matches!(extension.as_str(), "azw3" | "mobi") {
         let temp_dir = std::env::temp_dir().join("teoamoxtli-ebook-import");
         let converted = crate::pbb::convert_ebook_to_epub(path, &temp_dir, 0, &extension)?;
         let parsed = epub::read_epub_package(&converted)?;
+        let chapters = epub::chapters_for_import(&parsed);
         let _ = std::fs::remove_file(&converted);
         let file_name = path
             .file_name()
@@ -78,7 +84,7 @@ pub fn import_path(catalog: &mut Catalog, path: &Path) -> Result<ImportReport> {
             source_format: extension.clone(),
             source_path: path.to_string_lossy().to_string(),
             verse_count: 0,
-            entry_count: parsed.chapters.len() as i64,
+            entry_count: chapters.len() as i64,
             imported_at: now_epoch(),
             search_priority: 0,
             cloud_synced: false,
@@ -88,12 +94,13 @@ pub fn import_path(catalog: &mut Catalog, path: &Path) -> Result<ImportReport> {
                 "language": parsed.language,
                 "identifier": parsed.identifier,
                 "epubVersion": parsed.version,
-                "chapterCount": parsed.chapters.len(),
+                "chapterCount": chapters.len(),
+                "structureVersion": 2,
             }),
         };
         catalog.upsert_resource(&resource)?;
-        catalog.replace_epub_chapters(&resource.id, &parsed.chapters)?;
-        resource.entry_count = parsed.chapters.len() as i64;
+        catalog.replace_epub_chapters(&resource.id, &chapters)?;
+        resource.entry_count = chapters.len() as i64;
         catalog.upsert_resource(&resource)?;
         let _ = crate::indexer::index_resource(catalog.connection_mut(), &resource.id);
         return Ok(ImportReport {

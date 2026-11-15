@@ -371,10 +371,17 @@ pub struct AnchorInput {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct NoteInput {
+    /// Identificador opcional: `note_upsert` lo usa para actualizar en lugar
+    /// de crear. `note_create` y `note_update` lo ignoran.
+    #[serde(default)]
+    pub id: Option<String>,
+    #[serde(default)]
     pub notebook_id: Option<String>,
     pub title: String,
     pub content_json: serde_json::Value,
+    #[serde(default)]
     pub tags: Vec<String>,
+    #[serde(default)]
     pub anchors: Vec<AnchorInput>,
 }
 

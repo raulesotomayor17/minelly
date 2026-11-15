@@ -8,14 +8,17 @@ pub mod import;
 pub mod indexer;
 pub mod indexer_v2;
 pub mod reading;
+pub mod resource_search;
 pub mod editorial;
 pub mod learning;
 pub mod model;
 pub mod interlinear;
+pub mod library;
 pub mod notes;
 pub mod pbb;
 pub mod rag;
 pub mod sermon;
+pub mod typeset;
 pub mod wordstudy;
 
 use std::io::{copy as copy_stream, Write};
@@ -158,6 +161,7 @@ pub fn run() {
             commands::note_get,
             commands::note_create,
             commands::note_update,
+            commands::note_upsert,
             commands::note_delete,
             commands::notebook_create_node,
             commands::notebook_move,
@@ -170,6 +174,12 @@ pub fn run() {
             commands::repair_all_books_typesetting,
             commands::repair_book_typesetting,
             commands::reconstruct_book_structure,
+            commands::book_restore_from_source,
+            commands::scan_book_structures,
+            commands::search_in_resource,
+            commands::book_typeset_digest,
+            commands::book_typeset_apply,
+            commands::book_typeset_undo,
             commands::book_split_chapter_at,
             commands::book_merge_chapter_with_previous,
             commands::book_rename_chapter,
