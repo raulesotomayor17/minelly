@@ -2,7 +2,7 @@
 name = "minelly"
 version = "0.2.0"
 description = "Minelly: estudio bíblico local y multiplataforma"
-authors = ["Raúl Soto"]
+authors = ["Raúl Sotomayor"]
 license = "MIT"
 repository = "https://github.com/raulesotomayor17/minelly"
 homepage = "https://github.com/raulesotomayor17/minelly"
